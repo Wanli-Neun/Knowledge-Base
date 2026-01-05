@@ -1,4 +1,4 @@
-package com.kb.auth.DTO.Request.Auth;
+package com.kb.auth.dto.request.auth;
 
 public record LoginRequest(
     String email,

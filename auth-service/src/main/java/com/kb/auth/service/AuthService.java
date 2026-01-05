@@ -11,7 +11,7 @@ import java.time.temporal.ChronoUnit;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import com.kb.auth.DTO.Response.Auth.AuthResponse;
+import com.kb.auth.dto.response.auth.AuthResponse;
 import com.kb.auth.entity.RefreshToken;
 import com.kb.auth.entity.User;
 
