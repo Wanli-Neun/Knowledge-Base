@@ -44,6 +44,9 @@ public class User {
     @Column()
     private String displayName;
 
+    @Column()
+    private String avaUrl;
+
     @Column(nullable = false, length = 512)
     private String password;
 
