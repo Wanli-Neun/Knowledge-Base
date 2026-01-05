@@ -11,6 +11,7 @@ import java.time.temporal.ChronoUnit;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.kb.auth.dto.request.auth.ChangePasswordRequest;
 import com.kb.auth.dto.response.auth.AuthResponse;
 import com.kb.auth.entity.RefreshToken;
 import com.kb.auth.entity.User;
@@ -87,6 +88,24 @@ public class AuthService {
 
     public void logout(String refreshTokenValue) {
         refreshTokenRepository.revokeByToken(refreshTokenValue);
+    }
+
+    public void changePassword(UUID userId, ChangePasswordRequest request) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new IllegalArgumentException("New password and confirmation do not match");
+        }
+
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+
+        userRepository.save(user);
     }
 
     private RefreshToken createRefreshToken(User user) {
