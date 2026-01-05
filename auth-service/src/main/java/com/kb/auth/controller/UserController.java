@@ -1,6 +1,5 @@
 package com.kb.auth.controller;
 
-import org.hibernate.sql.Update;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +28,7 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/users")
+@RequestMapping("/user")
 public class UserController {
 
 
@@ -44,9 +43,24 @@ public class UserController {
         return ApiResponseBuilder.success("Get all users successfully", users);
     }
 
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/profile")
+    public ResponseEntity<ApiResponse<UserResponse>> getUserById(
+        Authentication authentication
+    ) {
+
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+
+        UUID userId = principal.getUserId();
+
+        UserResponse user = userService.getUserById(userId);
+
+        return ApiResponseBuilder.success("Get profile successfully", user);
+    }
+
 
     @PreAuthorize("isAuthenticated()")
-    @PatchMapping("/user/profile")
+    @PatchMapping("/profile")
     public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
         @RequestBody UpdateProfileRequest request,
         Authentication authentication

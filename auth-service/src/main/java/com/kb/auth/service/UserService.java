@@ -2,6 +2,7 @@ package com.kb.auth.service;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.kb.auth.repository.UserRepository;
 import com.kb.auth.dto.request.user.UpdateProfileRequest;
@@ -23,15 +24,18 @@ public class UserService {
     public Page<UserResponse> findAllUsers(Pageable pageable) {
         
         return userRepository.findAll(pageable)
-            .map(user -> UserResponse.builder()
-                .email(user.getEmail())
-                .fullName(user.getFullName())
-                .displayName(user.getDisplayName())
-                .avaUrl(user.getAvaUrl())
-                .build()
-            );
+            .map(user -> toUserResponse(user));
     }
 
+    public UserResponse getUserById(UUID userId) {
+        
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return toUserResponse(user);
+    }
+
+    @Transactional
     public UserResponse updateProfile(UUID userId, UpdateProfileRequest request) {
         
         User user = userRepository.findById(userId)
@@ -55,11 +59,16 @@ public class UserService {
 
         User updatedUser = userRepository.save(user);
 
+        return toUserResponse(updatedUser);
+    }
+
+    private UserResponse toUserResponse(User user) {
         return UserResponse.builder()
-            .email(updatedUser.getEmail())
-            .fullName(updatedUser.getFullName())
-            .displayName(updatedUser.getDisplayName())
-            .avaUrl(updatedUser.getAvaUrl())
+            .email(user.getEmail())
+            .fullName(user.getFullName())
+            .displayName(user.getDisplayName())
+            .avaUrl(user.getAvaUrl())
             .build();
     }
+
 }
