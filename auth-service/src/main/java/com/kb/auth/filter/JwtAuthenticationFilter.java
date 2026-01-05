@@ -11,6 +11,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
+import com.kb.auth.security.CustomUserPrincipal;
 import com.kb.auth.service.JwtService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -48,13 +49,16 @@ public class JwtAuthenticationFilter extends org.springframework.web.filter.Once
 
             UUID userId = jwtService.extractUserId(token);
             String role = jwtService.extractRole(token);
+            String email = jwtService.extractEmail(token);
+
+            CustomUserPrincipal principal = new CustomUserPrincipal(userId, role, email);
 
             GrantedAuthority authority =
                     new SimpleGrantedAuthority("ROLE_" + role);
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
-                            userId,
+                            principal,
                             null,
                             List.of(authority)
                     );
