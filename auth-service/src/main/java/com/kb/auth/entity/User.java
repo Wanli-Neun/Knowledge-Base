@@ -35,7 +35,10 @@ public class User {
     private String email;
 
     @Column()
-    private String name;
+    private String fullName;
+
+    @Column()
+    private String displayName;
 
     @Column(nullable = false, length = 512)
     private String password;

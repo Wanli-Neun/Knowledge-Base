@@ -21,8 +21,9 @@ public class UserService {
         return userRepository.findAll()
             .stream()
             .map(user -> UserResponse.builder()
-                .name(user.getName())
                 .email(user.getEmail())
+                .fullName(user.getFullName())
+                .displayName(user.getDisplayName())
                 .build()
             )
             .collect(Collectors.toList());
