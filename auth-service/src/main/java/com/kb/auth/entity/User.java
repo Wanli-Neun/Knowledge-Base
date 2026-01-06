@@ -15,7 +15,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import jakarta.persistence.Column;
 
 import com.kb.auth.enums.Role;
@@ -25,7 +24,6 @@ import java.time.Instant;
 @Entity
 @Table( name = "users" )
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -77,4 +75,19 @@ public class User {
         this.updatedAt = Instant.now();
     }
         
+    public void updateProfile(String fullName, String displayName, String avaUrl) {
+        if (fullName != null) {
+            this.fullName = fullName;
+        }
+        if (displayName != null) {
+            this.displayName = displayName;
+        }
+        if (avaUrl != null) {
+            this.avaUrl = avaUrl;
+        }
+    }
+
+    public void changePassword(String newPassword) {
+        this.password = newPassword;
+    }
 }

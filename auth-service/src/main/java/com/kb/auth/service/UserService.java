@@ -45,17 +45,7 @@ public class UserService {
         String displayName = request.getDisplayName();
         String avaUrl = request.getAvaUrl();
 
-        if (fullName != null) {
-            user.setFullName(fullName);
-        }
-
-        if (displayName != null) {
-            user.setDisplayName(displayName);
-        }
-
-        if (avaUrl != null) {
-            user.setAvaUrl(avaUrl);
-        }
+        user.updateProfile(fullName, displayName, avaUrl);
 
         User updatedUser = userRepository.save(user);
 

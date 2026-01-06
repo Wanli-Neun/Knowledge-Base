@@ -103,7 +103,7 @@ public class AuthService {
             throw new IllegalArgumentException("New password and confirmation do not match");
         }
 
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.changePassword(passwordEncoder.encode(request.getNewPassword()));
 
         userRepository.save(user);
     }
