@@ -31,7 +31,6 @@ import lombok.Setter;
     }
 )
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -70,5 +69,9 @@ public class RefreshToken {
     public boolean isActive() {
         return !revoked && !isExpired();
     }
+
+    public void revoked() {
+        this.revoked = true;
+    }   
         
 }

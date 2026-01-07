@@ -77,7 +77,7 @@ public class AuthService {
             throw new IllegalStateException("Refresh token expired or revoked");
         }
 
-        oldToken.setRevoked(true);
+        oldToken.revoked();
 
         RefreshToken newToken = createRefreshToken(oldToken.getUser());
 
