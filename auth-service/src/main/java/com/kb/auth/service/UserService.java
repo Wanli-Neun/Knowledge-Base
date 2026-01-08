@@ -52,6 +52,7 @@ public class UserService {
         return toUserResponse(updatedUser);
     }
 
+
     private UserResponse toUserResponse(User user) {
         return UserResponse.builder()
             .email(user.getEmail())
