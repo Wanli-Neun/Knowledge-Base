@@ -83,4 +83,19 @@ public class Member {
         this.updatedAt = Instant.now();
     }
 
+
+    public void update(UUID projectId, String displayName, UUID updatedBy, Boolean isActive){
+        
+        if (projectId != null) {
+            this.projectId = projectId;
+        }
+
+        if (displayName != null) {
+            this.displayName = displayName;
+        }
+        if (isActive != null) {
+            this.isActive = isActive;
+        }
+        this.updatedBy = updatedBy;
+    }
 }

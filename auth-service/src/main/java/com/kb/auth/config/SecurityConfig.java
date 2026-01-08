@@ -39,6 +39,7 @@ public class SecurityConfig {
                     "/auth/login",
                     "/auth/refresh"
                 ).permitAll()
+                .requestMatchers("/internal/**").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(
