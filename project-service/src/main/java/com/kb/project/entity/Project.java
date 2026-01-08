@@ -60,4 +60,15 @@ public class Project {
     public void onUpdate(){
         this.updatedAt = Instant.now();
     }
+
+    public void updateDetails(String name, String description, UUID userId){
+        this.name = name;
+        this.description = description;
+        this.updatedBy = userId;
+    }
+
+    public void deactivate(UUID userId){
+        this.isActive = false;
+        this.updatedBy = userId;
+    }
 }
