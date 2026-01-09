@@ -4,6 +4,7 @@ import com.kb.project.dto.client.auth.UserInternalResponse;
 import com.kb.project.dto.request.project.CreateProjectRequest;
 import com.kb.project.dto.request.project.UpdateProjectRequest;
 import com.kb.project.dto.response.ProjectResponse;
+import com.kb.project.repository.MemberRepository;
 import com.kb.project.repository.ProjectRepository;
 import com.kb.project.entity.Project;
 
@@ -21,24 +22,31 @@ import lombok.RequiredArgsConstructor;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
+    private final MemberRepository memberRepository;
     private final MemberService memberService;
 
     @Transactional(readOnly = true)
-    public Page<ProjectResponse> getAllProjects(Pageable pageable) {
-        return projectRepository.findAll(pageable)
-            .map(this::toProjectResponse);
+    public Page<Project> getAllProjects(Pageable pageable) {
+        return projectRepository.findAll(pageable);
     }
 
     @Transactional(readOnly = true)
-    public ProjectResponse getProject(UUID projectId){
+    public Project getProject(UUID projectId, UUID userId) {
+
+        boolean isMember = memberRepository.existsByProjectIdAndUserIdAndIsActiveTrue(projectId, userId);
+
+        if (!isMember) {
+            throw new RuntimeException("Access denied: User is not a member of the project");
+        }
+
         Project project = projectRepository.findById(projectId)
             .orElseThrow( () -> new RuntimeException("Project not found"));
         
-        return toProjectResponse(project);
+        return project;
     }
 
     @Transactional
-    public ProjectResponse createProject(CreateProjectRequest request, UUID userId) {
+    public Project createProject(CreateProjectRequest request, UUID userId) {
         Project project = Project.builder()
             .name(request.projectName())
             .description(request.description())
@@ -58,7 +66,7 @@ public class ProjectService {
             displayName
         );
 
-        return toProjectResponse(project);
+        return project;
     }
 
     @Transactional
@@ -83,13 +91,4 @@ public class ProjectService {
         project.deactivate(userId);
     }
 
-    private ProjectResponse toProjectResponse(Project project){
-        return ProjectResponse.builder()
-            .projectId(project.getId())
-            .projectName(project.getName())
-            .description(project.getDescription())
-            .createdBy(project.getCreatedBy())
-            .build();
-
-    }
 }
