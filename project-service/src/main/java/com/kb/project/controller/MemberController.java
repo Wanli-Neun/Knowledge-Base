@@ -22,6 +22,8 @@ import com.kb.project.dto.response.MemberResponse;
 import com.kb.project.security.CustomUserPrincipal;
 import com.kb.project.service.MemberService;
 import com.kb.project.dto.request.member.UpdateMemberRequest;
+import com.kb.project.entity.Member;
+import com.kb.project.mapper.MemberMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -41,9 +43,11 @@ public class MemberController {
     ) {
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
-        Page<MemberResponse> members = memberService.getMembers(projectId, principal.getUserId(), pageable);
+        Page<Member> members = memberService.getMembers(projectId, principal.getUserId(), pageable);
 
-        return ApiResponseBuilder.success("Get members successfully", members);
+        Page<MemberResponse> response = members.map(MemberMapper::toResponse);
+
+        return ApiResponseBuilder.success("Get members successfully", response);
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -55,9 +59,9 @@ public class MemberController {
     ){
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
-        MemberResponse member = memberService.addMember(projectId, request.userId(), principal.getUserId());
+        Member member = memberService.addMember(projectId, request.userId(), principal.getUserId());
 
-        return ApiResponseBuilder.created("Add member sucessfully", member);
+        return ApiResponseBuilder.created("Add member sucessfully", MemberMapper.toResponse(member));
     }
 
 
@@ -71,9 +75,9 @@ public class MemberController {
     ) {
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
-        MemberResponse member = memberService.update(memberId, projectId, principal.getUserId(), request.getDisplayName(), request.getIsActive());
+        Member member = memberService.update(memberId, projectId, principal.getUserId(), request.getDisplayName(), request.getIsActive());
 
-        return ApiResponseBuilder.success("Update member successfully", member);
+        return ApiResponseBuilder.success("Update member successfully", MemberMapper.toResponse(member));
     }
 
 }

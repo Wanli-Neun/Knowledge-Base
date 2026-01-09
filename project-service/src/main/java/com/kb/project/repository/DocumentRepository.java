@@ -10,8 +10,8 @@ import java.util.Optional;
 public interface DocumentRepository extends JpaRepository<Document, UUID> {
 
     Page<Document> findByProjectIdAndIsActiveTrue(UUID projectId, Pageable pageable);
-
-    Optional<Document> findByIdAndIsActiveTrue(UUID documentId);
-
+    
     Page<Document> findByProjectIdAndUploadedByAndIsActiveTrue(UUID projectId, UUID uploadedBy, Pageable pageable);
+
+    Optional<Document> findByIdAndProjectIdAndIsActiveTrue(UUID documentId, UUID projectId);
 }

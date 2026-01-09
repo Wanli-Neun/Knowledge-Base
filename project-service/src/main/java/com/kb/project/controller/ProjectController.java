@@ -5,6 +5,8 @@ import com.kb.project.common.response.ApiResponseBuilder;
 import com.kb.project.dto.request.project.CreateProjectRequest;
 import com.kb.project.dto.request.project.UpdateProjectRequest;
 import com.kb.project.dto.response.ProjectResponse;
+import com.kb.project.mapper.ProjectMapper;
+import com.kb.project.entity.Project;
 import com.kb.project.security.CustomUserPrincipal;
 import com.kb.project.service.ProjectService;
 
@@ -35,9 +37,11 @@ public class ProjectController {
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin")
     public ResponseEntity<ApiResponse<Page<ProjectResponse>>> getAllProjects(Pageable pageable){
-        Page<ProjectResponse> projects = projectService.getAllProjects(pageable);
+        Page<Project> projects = projectService.getAllProjects(pageable);
 
-        return ApiResponseBuilder.success("Get all projects successfully", projects);
+        Page<ProjectResponse> response = projects.map(ProjectMapper::toResponse);
+
+        return ApiResponseBuilder.success("Get all projects successfully", response);
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -47,9 +51,9 @@ public class ProjectController {
         Authentication authentication
     ){
         CustomUserPrincipal userPrincipal = (CustomUserPrincipal) authentication.getPrincipal();
-        ProjectResponse project = projectService.createProject(request, userPrincipal.getUserId());
+        Project project = projectService.createProject(request, userPrincipal.getUserId());
 
-        return ApiResponseBuilder.created("Project created successfully", project);
+        return ApiResponseBuilder.created("Project created successfully", ProjectMapper.toResponse(project));
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -59,9 +63,9 @@ public class ProjectController {
         Authentication authentication
     ){
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
-        ProjectResponse project = projectService.getProject(projectId);
+        Project project = projectService.getProject(projectId, principal.getUserId());
 
-        return ApiResponseBuilder.success("Get project successfully", project);
+        return ApiResponseBuilder.success("Get project successfully", ProjectMapper.toResponse(project));
     }
 
     @PreAuthorize("isAuthenticated()")

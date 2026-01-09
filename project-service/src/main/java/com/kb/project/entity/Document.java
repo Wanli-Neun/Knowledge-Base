@@ -77,4 +77,9 @@ public class Document {
     public void onUpdate(){
         this.updatedAt = Instant.now();
     }
+
+    public void deactivate(UUID userId) {
+        this.isActive = false;
+        this.updatedBy = userId;
+    }
 }

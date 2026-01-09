@@ -2,15 +2,11 @@ package com.kb.project.dto.response;
 
 import java.util.UUID;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.Getter;
 
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+@Getter
 @Builder
 public class ProjectResponse {
     private UUID projectId;
