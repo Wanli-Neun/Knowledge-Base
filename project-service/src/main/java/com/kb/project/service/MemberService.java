@@ -9,7 +9,6 @@ import com.kb.project.entity.Member;
 import com.kb.project.repository.ProjectRepository;
 
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.userdetails.User;
 
 import java.util.UUID;
 
@@ -29,7 +28,7 @@ public class MemberService {
     private final AuthUserClient authUserClient;
 
     @Transactional
-    public MemberResponse addMember(
+    public Member addMember(
         UUID projectId,
         UUID targetUserId,
         UUID addedBy
@@ -52,7 +51,7 @@ public class MemberService {
 
         Member member = addMemberInternal(projectId, targetUserId, addedBy, displayName);
 
-        return toMemberResponse(member);
+        return member;
     }
 
     public Member addMemberInternal(
@@ -72,18 +71,18 @@ public class MemberService {
     }
 
     @Transactional
-    public MemberResponse update(UUID memberId, UUID projectId, UUID updatedBy, String displayName, Boolean isActive){
+    public Member update(UUID memberId, UUID projectId, UUID updatedBy, String displayName, Boolean isActive){
         Member member = memberRepository.findById(memberId)
             .orElseThrow(() -> new RuntimeException("Member not found"));
 
         member.update(projectId, displayName, updatedBy, isActive);
 
-        return toMemberResponse(member);
+        return member;
 
     }
 
     @Transactional(readOnly = true)
-    public Page<MemberResponse> getMembers(UUID projectId, UUID userId, Pageable pageable){
+    public Page<Member> getMembers(UUID projectId, UUID userId, Pageable pageable){
 
         boolean isMember = memberRepository.existsByProjectIdAndUserIdAndIsActiveTrue(projectId, userId);
 
@@ -91,21 +90,11 @@ public class MemberService {
             throw new AccessDeniedException("Access denied: User is not a member of the project");
         }
 
-        return memberRepository.findByProjectIdAndIsActiveTrue(projectId, pageable)
-            .map(this::toMemberResponse);
+        return memberRepository.findByProjectIdAndIsActiveTrue(projectId, pageable);
     }
 
     public UserInternalResponse getUserInfo(UUID userId){
         return authUserClient.getUserById(userId);
-    }
-
-
-    private MemberResponse toMemberResponse(Member member) {
-        return MemberResponse.builder()
-            .projectId(member.getProjectId())
-            .addedBy(member.getAddedBy())
-            .displayName(member.getDisplayName())
-            .build();
     }
 
 }
