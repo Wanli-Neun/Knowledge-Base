@@ -14,10 +14,9 @@ import com.kb.auth.common.response.ApiResponse;
 import com.kb.auth.dto.response.user.UserResponse;
 import com.kb.auth.security.CustomUserPrincipal;
 import com.kb.auth.service.UserService;
-
-
+import com.kb.auth.entity.User;
+import com.kb.auth.mapper.UserMapper;
 import com.kb.auth.common.response.ApiResponseBuilder;
-
 import com.kb.auth.dto.request.user.UpdateProfileRequest;
 
 import org.springframework.security.core.Authentication;
@@ -38,9 +37,11 @@ public class UserController {
     @GetMapping("/admin")
     public ResponseEntity<ApiResponse<Page<UserResponse>>> getAllUsers(Pageable pageable) {
 
-        Page<UserResponse> users = userService.findAllUsers(pageable);
+        Page<User> users = userService.findAllUsers(pageable);
 
-        return ApiResponseBuilder.success("Get all users successfully", users);
+        Page<UserResponse> response = users.map(UserMapper::toResponse);
+
+        return ApiResponseBuilder.success("Get all users successfully", response);
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -53,9 +54,9 @@ public class UserController {
 
         UUID userId = principal.getUserId();
 
-        UserResponse user = userService.getUserById(userId);
+        User user = userService.getUserById(userId);
 
-        return ApiResponseBuilder.success("Get profile successfully", user);
+        return ApiResponseBuilder.success("Get profile successfully", UserMapper.toResponse(user));
     }
 
 
@@ -70,9 +71,9 @@ public class UserController {
 
         UUID userId = principal.getUserId();
 
-        UserResponse updatedUser = userService.updateProfile(userId, request);
+        User updatedUser = userService.updateProfile(userId, request);
 
-        return ApiResponseBuilder.success("Profile updated successfully", updatedUser);
+        return ApiResponseBuilder.success("Profile updated successfully", UserMapper.toResponse(updatedUser));
     }
     
 }
