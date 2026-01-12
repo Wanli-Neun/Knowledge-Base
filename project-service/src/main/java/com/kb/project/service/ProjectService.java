@@ -3,7 +3,6 @@ package com.kb.project.service;
 import com.kb.project.dto.client.auth.UserInternalResponse;
 import com.kb.project.dto.request.project.CreateProjectRequest;
 import com.kb.project.dto.request.project.UpdateProjectRequest;
-import com.kb.project.dto.response.ProjectResponse;
 import com.kb.project.repository.MemberRepository;
 import com.kb.project.repository.ProjectRepository;
 import com.kb.project.entity.Project;

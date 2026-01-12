@@ -2,7 +2,6 @@ package com.kb.project.service;
 
 import com.kb.project.client.auth.AuthUserClient;
 import com.kb.project.dto.client.auth.UserInternalResponse;
-import com.kb.project.dto.response.MemberResponse;
 import com.kb.project.repository.MemberRepository;
 
 import com.kb.project.entity.Member;
