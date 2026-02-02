@@ -5,14 +5,16 @@ import com.kb.project.entity.Member;
 
 public class MemberMapper {
 
-    private MemberMapper(){}
-
-    public static MemberResponse toResponse(Member member){
-        return MemberResponse.builder()
-            .projectId(member.getProjectId())
-            .displayName(member.getDisplayName())
-            .addedBy(member.getAddedBy())
-            .build();
+    private MemberMapper() {
     }
-    
+
+    public static MemberResponse toResponse(Member member) {
+        return MemberResponse.builder()
+                .userId(member.getUserId().toString())
+                .projectId(member.getProjectId())
+                .displayName(member.getDisplayName())
+                .addedBy(member.getAddedBy())
+                .build();
+    }
+
 }

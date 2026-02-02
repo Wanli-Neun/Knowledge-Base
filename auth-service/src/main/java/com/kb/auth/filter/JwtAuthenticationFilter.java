@@ -19,7 +19,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 
-
 @Component
 public class JwtAuthenticationFilter extends org.springframework.web.filter.OncePerRequestFilter {
 
@@ -31,10 +30,9 @@ public class JwtAuthenticationFilter extends org.springframework.web.filter.Once
 
     @Override
     protected void doFilterInternal(
-        HttpServletRequest request,
-        HttpServletResponse response,
-        FilterChain filterChain
-    ) throws ServletException, IOException {
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain filterChain) throws ServletException, IOException {
 
         String authHeader = request.getHeader("Authorization");
 
@@ -45,30 +43,32 @@ public class JwtAuthenticationFilter extends org.springframework.web.filter.Once
 
         String token = authHeader.substring(7);
 
-        if (jwtService.validateToken(token)) {
-
-            UUID userId = jwtService.extractUserId(token);
-            String role = jwtService.extractRole(token);
-            String email = jwtService.extractEmail(token);
-
-            CustomUserPrincipal principal = new CustomUserPrincipal(userId, role, email);
-
-            GrantedAuthority authority =
-                    new SimpleGrantedAuthority("ROLE_" + role);
-
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            principal,
-                            null,
-                            List.of(authority)
-                    );
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
+        if (!jwtService.validateToken(token)) {
+            System.out.println("Invalid or expired token - returning 401");
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.setCharacterEncoding("UTF-8");
+            response.getWriter().write("{\"status\":401,\"message\":\"Invalid or expired token\"}");
+            response.getWriter().flush();
+            return;
         }
 
-        // You can set the authentication in the SecurityContext here if needed
+        UUID userId = jwtService.extractUserId(token);
+        String role = jwtService.extractRole(token);
+        String email = jwtService.extractEmail(token);
+
+        CustomUserPrincipal principal = new CustomUserPrincipal(userId, role, email);
+
+        GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + role);
+
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                principal,
+                null,
+                List.of(authority));
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
         filterChain.doFilter(request, response);
     }
-    
+
 }

@@ -1,6 +1,8 @@
 package com.kb.auth.dto.request.auth;
 
 public record RegisterRequest(
-    String email,
-    String password
-) {}
+        String email,
+        String password,
+        String fullName,
+        String displayName) {
+}

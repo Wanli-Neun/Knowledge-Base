@@ -11,6 +11,7 @@ import java.time.temporal.ChronoUnit;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.kb.auth.common.ApiException;
 import com.kb.auth.dto.request.auth.ChangePasswordRequest;
 import com.kb.auth.dto.response.auth.AuthResponse;
 import com.kb.auth.entity.RefreshToken;
@@ -27,22 +28,25 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final UserRepository userRepository;
 
-    public AuthService( JwtService jwtService, PasswordEncoder passwordEncoder, RefreshTokenRepository refreshTokenRepository, UserRepository userRepository) {
+    public AuthService(JwtService jwtService, PasswordEncoder passwordEncoder,
+            RefreshTokenRepository refreshTokenRepository, UserRepository userRepository) {
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
         this.refreshTokenRepository = refreshTokenRepository;
         this.userRepository = userRepository;
     }
 
-    public void register(String email, String password) {
+    public void register(String email, String password, String fullName, String displayName) {
 
         if (userRepository.existsByEmail(email)) {
-            throw new IllegalStateException("Email already exists");
+            throw ApiException.conflict("Email already exists");
         }
 
         User user = User.builder()
                 .email(email)
                 .password(passwordEncoder.encode(password))
+                .fullName(fullName)
+                .displayName(displayName)
                 .build();
 
         userRepository.save(user);
@@ -51,14 +55,14 @@ public class AuthService {
     public AuthResponse login(String email, String password) {
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> ApiException.unauthorized("Invalid credentials"));
 
         if (!user.isActive()) {
-            throw new IllegalStateException("User is disabled");
+            throw ApiException.forbidden("User is disabled");
         }
 
         if (!passwordEncoder.matches(password, user.getPassword())) {
-            throw new IllegalArgumentException("Invalid password");
+            throw ApiException.unauthorized("Invalid credentials");
         }
 
         RefreshToken refreshToken = createRefreshToken(user);
@@ -70,19 +74,38 @@ public class AuthService {
 
     public AuthResponse refresh(String refreshTokenValue) {
 
+        System.out.println("=== Refresh Token Request ===");
+        System.out.println("Refresh token value: " + refreshTokenValue);
+
         RefreshToken oldToken = refreshTokenRepository.findByToken(refreshTokenValue)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid refresh token"));
+                .orElseThrow(() -> {
+                    System.out.println("Refresh token not found in database");
+                    return ApiException.unauthorized("Invalid refresh token");
+                });
+
+        System.out.println("Refresh token found. User ID: " + oldToken.getUser().getId());
+        System.out.println("Token is revoked: " + oldToken.isRevoked());
+        System.out.println("Token is expired: " + oldToken.isExpired());
+        System.out.println("Token is active: " + oldToken.isActive());
+        System.out.println("Token expires at: " + oldToken.getExpiresAt());
+        System.out.println("Current time: " + java.time.Instant.now());
 
         if (!oldToken.isActive()) {
-            throw new IllegalStateException("Refresh token expired or revoked");
+            System.out.println("Refresh token is not active (expired or revoked)");
+            throw ApiException.unauthorized("Refresh token expired or revoked");
         }
 
+        System.out.println("Revoking old token...");
         oldToken.revoked();
+        refreshTokenRepository.save(oldToken); // IMPORTANT: Save to persist revoke status
 
+        System.out.println("Creating new refresh token...");
         RefreshToken newToken = createRefreshToken(oldToken.getUser());
 
+        System.out.println("Generating new access token...");
         String newAccessToken = jwtService.generateAccessToken(oldToken.getUser());
 
+        System.out.println("Refresh successful!");
         return new AuthResponse(newAccessToken, newToken.getToken());
     }
 
@@ -93,14 +116,14 @@ public class AuthService {
     public void changePassword(UUID userId, ChangePasswordRequest request) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> ApiException.notFound("User not found"));
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("Current password is incorrect");
+            throw ApiException.badRequest("Current password is incorrect");
         }
 
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
-            throw new IllegalArgumentException("New password and confirmation do not match");
+            throw ApiException.badRequest("New password and confirmation do not match");
         }
 
         user.changePassword(passwordEncoder.encode(request.getNewPassword()));
