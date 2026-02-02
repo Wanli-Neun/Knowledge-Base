@@ -1,0 +1,575 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import styles from './project.module.scss';
+import Toast from '@/app/components/Toast';
+
+type ProjectDetail = {
+  projectId: string;
+  projectName: string;
+  description: string;
+  createdBy: string;
+  createdByDisplayName?: string;
+  createdAt?: string;
+};
+
+type User = {
+  userId: string;
+  email: string;
+  fullName: string;
+  displayName: string;
+  avaUrl: string;
+  role: string;
+};
+
+type Member = {
+  userId: string;
+  email: string;
+  fullName: string;
+  displayName: string;
+  avaUrl: string;
+  role: string;
+  joinedAt?: string;
+};
+
+export default function ProjectPage() {
+  const params = useParams();
+  const projectId = params.projectId as string;
+  
+  const [project, setProject] = useState<ProjectDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'documents' | 'members'>('documents');
+  const [isAddMemberModalOpen, setIsAddMemberModalOpen] = useState(false);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [isAddingMember, setIsAddingMember] = useState(false);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalMembers, setTotalMembers] = useState(0);
+  const [allMembers, setAllMembers] = useState<Member[]>([]); // Tất cả members để kiểm tra khi add
+  const [currentUserPage, setCurrentUserPage] = useState(0);
+  const [totalUserPages, setTotalUserPages] = useState(0);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const pageSize = 5;
+  const userPageSize = 10;
+
+  // Fetch current user
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const res = await fetch('/api/user/profile');
+        if (res.ok) {
+          const data = await res.json();
+          setCurrentUser(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch current user:', err);
+      }
+    };
+    fetchCurrentUser();
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchProject = async () => {
+      try {
+        console.log('[Client] Starting fetch for project:', projectId);
+        setLoading(true);
+        setError(null);
+        
+        const res = await fetch(`/api/projects/${projectId}`, {
+          credentials: 'include',
+        });
+        
+        if (cancelled) return;
+        
+        const data = await res.json();
+        
+        if (!res.ok) {
+          throw new Error(data.message || 'Failed to fetch project');
+        }
+        
+        setProject(data);
+      } catch (err) {
+        if (cancelled) return;
+        console.error('Error fetching project:', err);
+        setError(err instanceof Error ? err.message : 'Failed to load project');
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchProject();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
+
+  const fetchMembers = async (page: number = 0) => {
+    try {
+      const res = await fetch(`/api/projects/${projectId}/members?page=${page}&size=${pageSize}`);
+      if (res.ok) {
+        const data = await res.json();
+        console.log('[fetchMembers] Raw response:', data);
+        console.log('[fetchMembers] Content:', data.content);
+        const membersData = data.content || [];
+        setMembers(membersData);
+        setTotalPages(data.totalPages || 0);
+        setTotalMembers(data.totalElements || 0);
+        setCurrentPage(page);
+        return membersData; // Return data for immediate use
+      }
+    } catch (err) {
+      console.error('Failed to fetch members:', err);
+    }
+    return []; // Return empty array on error
+  };
+
+  // Fetch members when tab changes
+  useEffect(() => {
+    if (activeTab === 'members') {
+      fetchMembers(0); // Reset to first page when switching to members tab
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, projectId]);
+
+  // Fetch users with pagination
+  const fetchUsers = async (page: number = 0) => {
+    try {
+      const res = await fetch(`/api/users?page=${page}&size=${userPageSize}`);
+      if (res.ok) {
+        const data = await res.json();
+        console.log('[fetchUsers] Response:', data);
+        setAllUsers(data.content || []);
+        setTotalUserPages(data.totalPages || 0);
+        setTotalUsers(data.totalElements || 0);
+        setCurrentUserPage(page);
+      }
+    } catch (err) {
+      console.error('Failed to fetch users:', err);
+    }
+  };
+
+  // Fetch all users when opening modal
+  const handleOpenAddMemberModal = async () => {
+    setIsAddMemberModalOpen(true);
+    try {
+      // Fetch ALL members (không phân trang) để có danh sách đầy đủ
+      console.log('[Modal] Fetching all members...');
+      const membersRes = await fetch(`/api/projects/${projectId}/members?page=0&size=1000`);
+      if (membersRes.ok) {
+        const membersData = await membersRes.json();
+        const allMembersData = membersData.content || [];
+        setAllMembers(allMembersData);
+        console.log('[Modal] All members:', allMembersData);
+      }
+      
+      // Fetch users with pagination
+      console.log('[Modal] Fetching users with pagination...');
+      await fetchUsers(0); // Start from first page
+    } catch (err) {
+      console.error('[Modal] Error:', err);
+    }
+  };
+
+  const handleAddMember = async () => {
+    if (!selectedUserId) return;
+    
+    setIsAddingMember(true);
+    try {
+      const res = await fetch(`/api/projects/${projectId}/members`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: selectedUserId }),
+      });
+
+      if (res.ok) {
+        console.log('Member added successfully');
+        
+        // Get user display name for notification
+        const addedUser = allUsers.find(u => u.userId === selectedUserId);
+        const displayName = addedUser?.displayName || 'Member';
+        
+        setToast({ message: `Đã thêm ${displayName} vào project`, type: 'success' });
+        
+        // Refresh members list
+        await fetchMembers();
+        
+        setIsAddMemberModalOpen(false);
+        setSelectedUserId(null);
+      } else {
+        const error = await res.json();
+        console.error('Failed to add member:', error);
+        setToast({ message: error.message || 'Không thể thêm member', type: 'error' });
+      }
+    } catch (err) {
+      console.error('Failed to add member:', err);
+      setToast({ message: 'Có lỗi xảy ra khi thêm member', type: 'error' });
+    } finally {
+      setIsAddingMember(false);
+    }
+  };
+
+  const handleRemoveMember = async (userId: string, displayName: string) => {
+    if (!confirm(`Bạn có chắc muốn xóa ${displayName} khỏi project?`)) {
+      return;
+    }
+    
+    try {
+      const res = await fetch(`/api/projects/${projectId}/members?userId=${userId}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        console.log('Member removed successfully');
+        setToast({ message: `Đã xóa ${displayName} khỏi project`, type: 'success' });
+        // Refresh members list
+        await fetchMembers();
+      } else {
+        const error = await res.json();
+        console.error('Failed to remove member:', error);
+        setToast({ message: error.message || 'Không thể xóa member', type: 'error' });
+      }
+    } catch (err) {
+      console.error('Failed to remove member:', err);
+      setToast({ message: 'Có lỗi xảy ra khi xóa member', type: 'error' });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.loading}>
+          <div className={styles.spinner}></div>
+          <p>Loading project...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !project) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.error}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2"/>
+            <path d="M12 8v4M12 16h.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+          <h2>Failed to Load Project</h2>
+          <p>{error || 'Project not found'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.container}>
+      {/* Header */}
+      <div className={styles.header}>
+        <div className={styles.projectIcon}>📁</div>
+        <div className={styles.projectInfo}>
+          <h1 className={styles.projectName}>{project.projectName}</h1>
+          {project.description && (
+            <p className={styles.description}>{project.description}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Created By */}
+      <div className={styles.meta}>
+        <span className={styles.metaLabel}>Created by</span>
+        <div className={styles.creator}>
+          <div className={styles.creatorAvatar}>
+            {project.createdByDisplayName?.charAt(0).toUpperCase() || 'U'}
+          </div>
+          <span className={styles.creatorName}>
+            {project.createdByDisplayName || project.createdBy}
+          </span>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className={styles.tabsContainer}>
+        {/* Tab Headers */}
+        <div className={styles.tabHeaders}>
+          <button
+            className={`${styles.tabHeader} ${activeTab === 'documents' ? styles.active : ''}`}
+            onClick={() => setActiveTab('documents')}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Documents
+          </button>
+          <button
+            className={`${styles.tabHeader} ${activeTab === 'members' ? styles.active : ''}`}
+            onClick={() => setActiveTab('members')}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Members
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div className={styles.tabContent}>
+          {activeTab === 'documents' && (
+            <div className={styles.documentsTab}>
+              <div className={styles.tabHeader}>
+                <h2>Documents</h2>
+                <button className={styles.uploadButton}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Upload Document
+                </button>
+              </div>
+              
+              <div className={styles.documentList}>
+                <div className={styles.emptyState}>
+                  <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <h3>No documents yet</h3>
+                  <p>Upload your first document to get started</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'members' && (
+            <div className={styles.membersTab}>
+              <div className={styles.tabHeader}>
+                <h2>Members</h2>
+                {currentUser?.userId === project.createdBy && (
+                  <button className={styles.addButton} onClick={handleOpenAddMemberModal}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Add Member
+                  </button>
+                )}
+              </div>
+              
+              <div className={styles.memberList}>
+                {members.length === 0 ? (
+                  <div key="empty-members" className={styles.emptyState}>
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+                      <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    <h3>No members yet</h3>
+                    <p>Add your first member to collaborate</p>
+                  </div>
+                ) : (
+                  members.map((member, index) => {
+                    const isCreator = currentUser?.userId === project.createdBy;
+                    const canDelete = isCreator && member.userId !== project.createdBy;
+                    
+                    return (
+                      <div key={member.userId || member.email || `member-${index}`} className={styles.memberItem}>
+                        <div className={styles.memberAvatar}>
+                          {member.displayName?.charAt(0).toUpperCase() || 'U'}
+                        </div>
+                        <div className={styles.memberInfo}>
+                          <div className={styles.memberName}>
+                            {member.displayName}
+                          </div>
+                          <div className={styles.memberEmail}>
+                            {member.email}
+                          </div>
+                        </div>
+                        <div className={styles.memberBadge}>
+                          {member.userId === project.createdBy ? 'Owner' : 'Member'}
+                        </div>
+                        {canDelete && (
+                          <button 
+                            className={styles.deleteButton}
+                            onClick={() => handleRemoveMember(member.userId, member.displayName)}
+                            title="Remove member"
+                          >
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                              <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className={styles.pagination}>
+                  <button 
+                    className={styles.pageButton}
+                    onClick={() => fetchMembers(currentPage - 1)}
+                    disabled={currentPage === 0}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Previous
+                  </button>
+                  
+                  <div className={styles.pageInfo}>
+                    {currentPage + 1} of {totalPages}
+                    <span className={styles.totalItems}>({totalMembers} members)</span>
+                  </div>
+                  
+                  <button 
+                    className={styles.pageButton}
+                    onClick={() => fetchMembers(currentPage + 1)}
+                    disabled={currentPage >= totalPages - 1}
+                  >
+                    Next
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Add Member Modal */}
+      {isAddMemberModalOpen && (
+        <div className={styles.modalOverlay} onClick={() => setIsAddMemberModalOpen(false)}>
+          <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.modalHeader}>
+              <h3>Add Member</h3>
+              <button 
+                className={styles.modalCloseButton}
+                onClick={() => setIsAddMemberModalOpen(false)}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M6 18L18 6M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              <p className={styles.modalDescription}>Select a user to add to this project</p>
+              
+              <div className={styles.userList}>
+                {allUsers.length === 0 ? (
+                  <div className={styles.emptyUsers}>
+                    <p>No users available</p>
+                  </div>
+                ) : (
+                  allUsers.map((user) => {
+                    const isAlreadyMember = allMembers.some(m => m.userId === user.userId);
+                    console.log(`[Modal] Checking user ${user.userId} (${user.displayName}):`, {
+                      isAlreadyMember,
+                      memberUserIds: allMembers.map(m => m.userId),
+                      userUserId: user.userId
+                    });
+                    return (
+                      <div
+                        key={user.userId}
+                        className={`${styles.userItem} ${selectedUserId === user.userId ? styles.selected : ''} ${isAlreadyMember ? styles.disabled : ''}`}
+                        onClick={() => {
+                          if (!isAlreadyMember) {
+                            setSelectedUserId(user.userId);
+                          }
+                        }}
+                        style={isAlreadyMember ? { cursor: 'not-allowed', opacity: 0.5 } : {}}
+                      >
+                        <div className={styles.userAvatar}>
+                          {user.displayName?.charAt(0).toUpperCase() || 'U'}
+                        </div>
+                        <div className={styles.userInfo}>
+                          <div className={styles.userName}>
+                            {user.displayName}
+                            {isAlreadyMember && <span style={{ marginLeft: '8px', fontSize: '12px', color: '#666' }}>(Already member)</span>}
+                          </div>
+                          <div className={styles.userEmail}>{user.email}</div>
+                        </div>
+                        {selectedUserId === user.userId && !isAlreadyMember && (
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" className={styles.checkIcon}>
+                            <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* User Pagination */}
+              {totalUserPages > 1 && (
+                <div className={styles.modalPagination}>
+                  <button 
+                    className={styles.modalPageButton}
+                    onClick={() => fetchUsers(currentUserPage - 1)}
+                    disabled={currentUserPage === 0}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                  
+                  <div className={styles.modalPageInfo}>
+                    {currentUserPage + 1} / {totalUserPages}
+                  </div>
+                  
+                  <button 
+                    className={styles.modalPageButton}
+                    onClick={() => fetchUsers(currentUserPage + 1)}
+                    disabled={currentUserPage >= totalUserPages - 1}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                      <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className={styles.modalFooter}>
+              <button 
+                className={styles.cancelButton}
+                onClick={() => {
+                  setIsAddMemberModalOpen(false);
+                  setSelectedUserId(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button 
+                className={styles.confirmButton}
+                onClick={handleAddMember}
+                disabled={!selectedUserId || isAddingMember}
+              >
+                {isAddingMember ? 'Adding...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+    </div>
+  );
+}
