@@ -30,6 +30,11 @@ public class ProjectService {
     }
 
     @Transactional(readOnly = true)
+    public Page<Project> getProjectsByUserId(UUID userId, Pageable pageable) {
+        return projectRepository.findProjectsByUserId(userId, pageable);
+    }
+
+    @Transactional(readOnly = true)
     public Project getProject(UUID projectId, UUID userId) {
 
         boolean isMember = memberRepository.existsByProjectIdAndUserIdAndIsActiveTrue(projectId, userId);
@@ -39,19 +44,24 @@ public class ProjectService {
         }
 
         Project project = projectRepository.findById(projectId)
-            .orElseThrow( () -> new RuntimeException("Project not found"));
-        
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
         return project;
+    }
+
+    public String getCreatorDisplayName(UUID userId) {
+        UserInternalResponse userInfo = memberService.getUserInfo(userId);
+        return userInfo.getDisplayName();
     }
 
     @Transactional
     public Project createProject(CreateProjectRequest request, UUID userId) {
         Project project = Project.builder()
-            .name(request.projectName())
-            .description(request.description())
-            .createdBy(userId)
-            .updatedBy(userId)
-            .build();
+                .name(request.projectName())
+                .description(request.description())
+                .createdBy(userId)
+                .updatedBy(userId)
+                .build();
 
         projectRepository.save(project);
 
@@ -59,11 +69,10 @@ public class ProjectService {
         String displayName = userInfo.getDisplayName();
 
         memberService.addMemberInternal(
-            project.getId(),
-            userId,
-            userId,
-            displayName
-        );
+                project.getId(),
+                userId,
+                userId,
+                displayName);
 
         return project;
     }
@@ -72,20 +81,19 @@ public class ProjectService {
     public void updateProject(UpdateProjectRequest request, UUID userId, UUID projectId) {
 
         Project project = projectRepository.findById(projectId)
-            .orElseThrow( () -> new RuntimeException("Project not found"));
+                .orElseThrow(() -> new RuntimeException("Project not found"));
 
         project.updateDetails(
-            request.projectName(),
-            request.description(),
-            userId
-        );
+                request.projectName(),
+                request.description(),
+                userId);
 
     }
 
     @Transactional
     public void deactivate(UUID projectId, UUID userId) {
         Project project = projectRepository.findById(projectId)
-            .orElseThrow( () -> new RuntimeException("Project not found"));
+                .orElseThrow(() -> new RuntimeException("Project not found"));
 
         project.deactivate(userId);
     }

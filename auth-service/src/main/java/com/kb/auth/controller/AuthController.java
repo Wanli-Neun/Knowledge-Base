@@ -23,7 +23,7 @@ import org.springframework.security.core.Authentication;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
-    
+
     private final AuthService authService;
 
     public AuthController(AuthService authService) {
@@ -33,7 +33,11 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<Void>> register(@RequestBody RegisterRequest request) {
 
-        authService.register(request.email(), request.password());
+        authService.register(
+                request.email(),
+                request.password(),
+                request.fullName(),
+                request.displayName());
 
         return ApiResponseBuilder.created();
     }
@@ -64,15 +68,13 @@ public class AuthController {
     @PreAuthorize("isAuthenticated()")
     @PatchMapping("/change-password")
     public ResponseEntity<ApiResponse<Void>> changePassword(
-        @RequestBody ChangePasswordRequest request,
-        Authentication authentication
-    ){
+            @RequestBody ChangePasswordRequest request,
+            Authentication authentication) {
 
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
         authService.changePassword(principal.getUserId(), request);
 
         return ApiResponseBuilder.noContent();
     }
-
 
 }

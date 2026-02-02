@@ -7,6 +7,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,10 +38,9 @@ public class MemberController {
     @PreAuthorize("isAuthenticated()")
     @GetMapping()
     public ResponseEntity<ApiResponse<Page<MemberResponse>>> getMembers(
-        @PathVariable UUID projectId,
-        Pageable pageable,
-        Authentication authentication
-    ) {
+            @PathVariable UUID projectId,
+            Pageable pageable,
+            Authentication authentication) {
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
         Page<Member> members = memberService.getMembers(projectId, principal.getUserId(), pageable);
@@ -53,10 +53,9 @@ public class MemberController {
     @PreAuthorize("isAuthenticated()")
     @PostMapping()
     public ResponseEntity<ApiResponse<MemberResponse>> addMember(
-        @RequestBody AddMemberRequest request,
-        @PathVariable UUID projectId,
-        Authentication authentication
-    ){
+            @RequestBody AddMemberRequest request,
+            @PathVariable UUID projectId,
+            Authentication authentication) {
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
         Member member = memberService.addMember(projectId, request.userId(), principal.getUserId());
@@ -64,20 +63,32 @@ public class MemberController {
         return ApiResponseBuilder.created("Add member sucessfully", MemberMapper.toResponse(member));
     }
 
-
     @PreAuthorize("isAuthenticated()")
     @PatchMapping("/{memberId}")
     public ResponseEntity<ApiResponse<MemberResponse>> update(
-        @PathVariable UUID projectId,
-        @PathVariable UUID memberId,
-        @RequestBody UpdateMemberRequest request,
-        Authentication authentication
-    ) {
+            @PathVariable UUID projectId,
+            @PathVariable UUID memberId,
+            @RequestBody UpdateMemberRequest request,
+            Authentication authentication) {
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
-        Member member = memberService.update(memberId, projectId, principal.getUserId(), request.getDisplayName(), request.getIsActive());
+        Member member = memberService.update(memberId, projectId, principal.getUserId(), request.getDisplayName(),
+                request.getIsActive());
 
         return ApiResponseBuilder.success("Update member successfully", MemberMapper.toResponse(member));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<ApiResponse<Void>> removeMember(
+            @PathVariable UUID projectId,
+            @PathVariable UUID userId,
+            Authentication authentication) {
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+
+        memberService.removeMember(projectId, userId, principal.getUserId());
+
+        return ApiResponseBuilder.success("Member removed successfully", null);
     }
 
 }

@@ -5,15 +5,26 @@ import com.kb.project.entity.Project;
 
 public class ProjectMapper {
 
-    private ProjectMapper() {}
-
-    public static ProjectResponse toResponse(Project project){
-        return ProjectResponse.builder()
-            .projectId(project.getId())
-            .projectName(project.getName())
-            .description(project.getDescription())
-            .createdBy(project.getCreatedBy())
-            .build();
+    private ProjectMapper() {
     }
-    
+
+    public static ProjectResponse toResponse(Project project) {
+        return ProjectResponse.builder()
+                .projectId(project.getId())
+                .projectName(project.getName())
+                .description(project.getDescription())
+                .createdBy(project.getCreatedBy())
+                .build();
+    }
+
+    public static ProjectResponse toResponse(Project project, String createdByDisplayName) {
+        return ProjectResponse.builder()
+                .projectId(project.getId())
+                .projectName(project.getName())
+                .description(project.getDescription())
+                .createdBy(project.getCreatedBy())
+                .createdByDisplayName(createdByDisplayName)
+                .build();
+    }
+
 }

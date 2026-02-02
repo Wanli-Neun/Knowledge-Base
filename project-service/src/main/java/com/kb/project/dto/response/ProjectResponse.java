@@ -5,7 +5,6 @@ import java.util.UUID;
 import lombok.Builder;
 import lombok.Getter;
 
-
 @Getter
 @Builder
 public class ProjectResponse {
@@ -13,4 +12,5 @@ public class ProjectResponse {
     private String projectName;
     private String description;
     private UUID createdBy;
+    private String createdByDisplayName;
 }

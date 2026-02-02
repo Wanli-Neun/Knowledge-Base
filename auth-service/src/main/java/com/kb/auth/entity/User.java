@@ -22,7 +22,7 @@ import com.kb.auth.enums.Role;
 import java.time.Instant;
 
 @Entity
-@Table( name = "users" )
+@Table(name = "users")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -64,17 +64,17 @@ public class User {
     private boolean active = true;
 
     @PrePersist
-    protected void onCreate(){
+    protected void onCreate() {
         Instant now = Instant.now();
         this.createdAt = now;
         this.updatedAt = now;
     }
 
     @PreUpdate
-    protected void onUpdate(){
+    protected void onUpdate() {
         this.updatedAt = Instant.now();
     }
-        
+
     public void updateProfile(String fullName, String displayName, String avaUrl) {
         if (fullName != null) {
             this.fullName = fullName;

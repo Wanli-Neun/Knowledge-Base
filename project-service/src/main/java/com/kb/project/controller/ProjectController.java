@@ -36,7 +36,7 @@ public class ProjectController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin")
-    public ResponseEntity<ApiResponse<Page<ProjectResponse>>> getAllProjects(Pageable pageable){
+    public ResponseEntity<ApiResponse<Page<ProjectResponse>>> getAllProjects(Pageable pageable) {
         Page<Project> projects = projectService.getAllProjects(pageable);
 
         Page<ProjectResponse> response = projects.map(ProjectMapper::toResponse);
@@ -45,11 +45,23 @@ public class ProjectController {
     }
 
     @PreAuthorize("isAuthenticated()")
-    @PostMapping("/create")
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<ProjectResponse>>> getMyProjects(
+            Pageable pageable,
+            Authentication authentication) {
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+        Page<Project> projects = projectService.getProjectsByUserId(principal.getUserId(), pageable);
+
+        Page<ProjectResponse> response = projects.map(ProjectMapper::toResponse);
+
+        return ApiResponseBuilder.success("Get my projects successfully", response);
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PostMapping
     public ResponseEntity<ApiResponse<ProjectResponse>> createProject(
-        @RequestBody CreateProjectRequest request,
-        Authentication authentication
-    ){
+            @RequestBody CreateProjectRequest request,
+            Authentication authentication) {
         CustomUserPrincipal userPrincipal = (CustomUserPrincipal) authentication.getPrincipal();
         Project project = projectService.createProject(request, userPrincipal.getUserId());
 
@@ -59,22 +71,22 @@ public class ProjectController {
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/{projectId}")
     public ResponseEntity<ApiResponse<ProjectResponse>> getProject(
-        @PathVariable UUID projectId,
-        Authentication authentication
-    ){
+            @PathVariable UUID projectId,
+            Authentication authentication) {
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
         Project project = projectService.getProject(projectId, principal.getUserId());
+        String creatorDisplayName = projectService.getCreatorDisplayName(project.getCreatedBy());
 
-        return ApiResponseBuilder.success("Get project successfully", ProjectMapper.toResponse(project));
+        return ApiResponseBuilder.success("Get project successfully",
+                ProjectMapper.toResponse(project, creatorDisplayName));
     }
 
     @PreAuthorize("isAuthenticated()")
     @PatchMapping("/{projectId}")
     public ResponseEntity<ApiResponse<Void>> updateProject(
-        @RequestBody UpdateProjectRequest request,
-        @PathVariable UUID projectId,
-        Authentication authentication
-    ){
+            @RequestBody UpdateProjectRequest request,
+            @PathVariable UUID projectId,
+            Authentication authentication) {
         System.out.println("Updating project with ID: " + projectId);
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
         projectService.updateProject(request, principal.getUserId(), projectId);
@@ -85,9 +97,8 @@ public class ProjectController {
     @PreAuthorize("isAuthenticated()")
     @PatchMapping("/{projectId}/deactivate")
     public ResponseEntity<ApiResponse<Void>> deactivate(
-        @PathVariable UUID projectId,
-        Authentication authentication
-    ){
+            @PathVariable UUID projectId,
+            Authentication authentication) {
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
         projectService.deactivate(projectId, principal.getUserId());
 

@@ -30,7 +30,6 @@ import java.util.UUID;
 @RequestMapping("/user")
 public class UserController {
 
-
     private final UserService userService;
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -45,10 +44,20 @@ public class UserController {
     }
 
     @PreAuthorize("isAuthenticated()")
+    @GetMapping("/all")
+    public ResponseEntity<ApiResponse<Page<UserResponse>>> getAllUsersForCollaboration(Pageable pageable) {
+
+        Page<User> users = userService.findAllUsers(pageable);
+
+        Page<UserResponse> response = users.map(UserMapper::toResponse);
+
+        return ApiResponseBuilder.success("Get all users successfully", response);
+    }
+
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/profile")
     public ResponseEntity<ApiResponse<UserResponse>> getUserById(
-        Authentication authentication
-    ) {
+            Authentication authentication) {
 
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
@@ -59,13 +68,11 @@ public class UserController {
         return ApiResponseBuilder.success("Get profile successfully", UserMapper.toResponse(user));
     }
 
-
     @PreAuthorize("isAuthenticated()")
     @PatchMapping("/profile")
     public ResponseEntity<ApiResponse<UserResponse>> updateProfile(
-        @RequestBody UpdateProfileRequest request,
-        Authentication authentication
-    ) {
+            @RequestBody UpdateProfileRequest request,
+            Authentication authentication) {
 
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
@@ -75,5 +82,5 @@ public class UserController {
 
         return ApiResponseBuilder.success("Profile updated successfully", UserMapper.toResponse(updatedUser));
     }
-    
+
 }

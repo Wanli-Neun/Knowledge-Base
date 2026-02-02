@@ -5,8 +5,8 @@ import com.kb.project.entity.Member;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.Optional;
 import java.util.UUID;
-
 
 public interface MemberRepository extends JpaRepository<Member, UUID> {
 
@@ -15,5 +15,9 @@ public interface MemberRepository extends JpaRepository<Member, UUID> {
     Page<Member> findByProjectIdAndIsActiveTrue(UUID projectId, Pageable pageable);
 
     Page<Member> findByUserIdAndIsActiveTrue(UUID userId, Pageable pageable);
+
+    Optional<Member> findByProjectIdAndUserIdAndIsActiveTrue(UUID projectId, UUID userId);
+
+    Optional<Member> findByProjectIdAndUserId(UUID projectId, UUID userId);
 
 }

@@ -1,6 +1,5 @@
 package com.kb.project.dto.response;
 
-
 import lombok.Builder;
 import lombok.Getter;
 
@@ -10,6 +9,7 @@ import java.util.UUID;
 @Builder
 public class MemberResponse {
 
+    private String userId;
     private UUID projectId;
     private String displayName;
     private UUID addedBy;
