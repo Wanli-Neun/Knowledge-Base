@@ -6,6 +6,7 @@ type FetchWithAuthOptions = {
   method?: string;
   body?: any;
   headers?: Record<string, string>;
+  isFormData?: boolean; // Thêm flag để xử lý FormData
 };
 
 /**
@@ -25,7 +26,7 @@ export async function fetchWithAuth<T>(
     );
   }
 
-  const { url, method = "GET", body, headers = {} } = options;
+  const { url, method = "GET", body, headers = {}, isFormData = false } = options;
 
   // Prepare fetch options
   const fetchOptions: RequestInit = {
@@ -37,11 +38,16 @@ export async function fetchWithAuth<T>(
   };
 
   if (body) {
-    fetchOptions.body = typeof body === "string" ? body : JSON.stringify(body);
-    fetchOptions.headers = {
-      ...fetchOptions.headers,
-      "Content-Type": "application/json",
-    };
+    if (isFormData) {
+      // For FormData, don't set Content-Type (browser will set it with boundary)
+      fetchOptions.body = body;
+    } else {
+      fetchOptions.body = typeof body === "string" ? body : JSON.stringify(body);
+      fetchOptions.headers = {
+        ...fetchOptions.headers,
+        "Content-Type": "application/json",
+      };
+    }
   }
 
   let res = await fetch(url, fetchOptions);

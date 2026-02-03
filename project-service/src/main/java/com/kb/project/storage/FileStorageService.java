@@ -6,13 +6,12 @@ import java.time.Duration;
 
 public interface FileStorageService {
     void upload(
-        String key,
-        InputStream inputStream,
-        long contentLength,
-        String contentType
-    );
+            String key,
+            InputStream inputStream,
+            long contentLength,
+            String contentType);
 
     void delete(String key);
 
-    String generateDownloadUrl(String key, Duration expiresIn);
+    String generateDownloadUrl(String key, Duration expiresIn, String filename);
 }
