@@ -15,3 +15,13 @@ export async function GET() {
     method: "GET",
   });
 }
+
+export async function PATCH(req: Request) {
+  const body = await req.json();
+
+  return fetchWithAuth<UserProfile>({
+    url: `${process.env.AUTH_SERVICE_URL}/user/profile`,
+    method: "PATCH",
+    body,
+  });
+}

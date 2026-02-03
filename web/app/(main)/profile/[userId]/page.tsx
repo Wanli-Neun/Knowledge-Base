@@ -26,6 +26,8 @@ export default function ProfilePage() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [editValues, setEditValues] = useState({ fullName: '', displayName: '' });
+  const [isSaving, setIsSaving] = useState(false);
 
   // Fetch current user
   useEffect(() => {
@@ -73,9 +75,59 @@ export default function ProfilePage() {
   }, [userId]);
 
   const handleEditProfile = () => {
-    setIsEditing(true);
-    // TODO: Open edit modal or navigate to edit page
-    setToast({ message: 'Edit profile feature coming soon', type: 'success' });
+    if (profile) {
+      setEditValues({
+        fullName: profile.fullName,
+        displayName: profile.displayName
+      });
+      setIsEditing(true);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditValues({ fullName: '', displayName: '' });
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editValues.fullName.trim() || !editValues.displayName.trim()) {
+      setToast({ message: 'Full Name and Display Name are required', type: 'error' });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const res = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fullName: editValues.fullName,
+          displayName: editValues.displayName,
+        }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Failed to update profile');
+      }
+
+      const data = await res.json();
+      
+      // Update profile with new data
+      setProfile(data);
+      setIsEditing(false);
+      setToast({ message: 'Profile updated successfully', type: 'success' });
+    } catch (err) {
+      console.error('Failed to update profile:', err);
+      setToast({ 
+        message: err instanceof Error ? err.message : 'Failed to update profile', 
+        type: 'error' 
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleChangePassword = () => {
@@ -177,7 +229,19 @@ export default function ProfilePage() {
 
         {/* Info Section */}
         <div className={styles.infoSection}>
-          <h2 className={styles.sectionTitle}>Information</h2>
+          <div className={styles.sectionHeader}>
+            <h2 className={styles.sectionTitle}>Information</h2>
+            {isOwnProfile && isEditing && (
+              <div className={styles.editActions}>
+                <button className={styles.cancelButton} onClick={handleCancelEdit} disabled={isSaving}>
+                  Cancel
+                </button>
+                <button className={styles.saveButton} onClick={handleSaveProfile} disabled={isSaving}>
+                  {isSaving ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            )}
+          </div>
           
           <div className={styles.infoGrid}>
             <div className={styles.infoItem}>
@@ -199,7 +263,17 @@ export default function ProfilePage() {
                 </svg>
                 Full Name
               </div>
-              <div className={styles.infoValue}>{profile.fullName}</div>
+              {isEditing && isOwnProfile ? (
+                <input
+                  type="text"
+                  className={styles.editInput}
+                  value={editValues.fullName}
+                  onChange={(e) => setEditValues({ ...editValues, fullName: e.target.value })}
+                  placeholder="Enter full name"
+                />
+              ) : (
+                <div className={styles.infoValue}>{profile.fullName}</div>
+              )}
             </div>
 
             <div className={styles.infoItem}>
@@ -211,7 +285,17 @@ export default function ProfilePage() {
                 </svg>
                 Display Name
               </div>
-              <div className={styles.infoValue}>{profile.displayName}</div>
+              {isEditing && isOwnProfile ? (
+                <input
+                  type="text"
+                  className={styles.editInput}
+                  value={editValues.displayName}
+                  onChange={(e) => setEditValues({ ...editValues, displayName: e.target.value })}
+                  placeholder="Enter display name"
+                />
+              ) : (
+                <div className={styles.infoValue}>{profile.displayName}</div>
+              )}
             </div>
 
             <div className={styles.infoItem}>
