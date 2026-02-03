@@ -19,6 +19,7 @@ import com.kb.auth.entity.User;
 import com.kb.auth.mapper.UserMapper;
 import com.kb.auth.common.response.ApiResponseBuilder;
 import com.kb.auth.dto.request.user.UpdateProfileRequest;
+import com.kb.auth.dto.request.auth.ChangePasswordRequest;
 
 import org.springframework.security.core.Authentication;
 
@@ -94,6 +95,21 @@ public class UserController {
         User updatedUser = userService.updateProfile(userId, request);
 
         return ApiResponseBuilder.success("Profile updated successfully", UserMapper.toResponse(updatedUser));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @RequestBody ChangePasswordRequest request,
+            Authentication authentication) {
+
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+
+        UUID userId = principal.getUserId();
+
+        userService.changePassword(userId, request);
+
+        return ApiResponseBuilder.success("Password changed successfully", null);
     }
 
 }

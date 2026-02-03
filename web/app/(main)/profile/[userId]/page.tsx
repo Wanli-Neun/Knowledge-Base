@@ -28,6 +28,7 @@ export default function ProfilePage() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [editValues, setEditValues] = useState({ fullName: '', displayName: '' });
   const [isSaving, setIsSaving] = useState(false);
+  const [passwordValues, setPasswordValues] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
 
   // Fetch current user
   useEffect(() => {
@@ -132,8 +133,64 @@ export default function ProfilePage() {
 
   const handleChangePassword = () => {
     setIsChangingPassword(true);
-    // TODO: Open change password modal
-    setToast({ message: 'Change password feature coming soon', type: 'success' });
+    setPasswordValues({ oldPassword: '', newPassword: '', confirmPassword: '' });
+  };
+
+  const handleCancelChangePassword = () => {
+    setIsChangingPassword(false);
+    setPasswordValues({ oldPassword: '', newPassword: '', confirmPassword: '' });
+  };
+
+  const handleSavePassword = async () => {
+    // Validation
+    if (!passwordValues.oldPassword) {
+      setToast({ message: 'Please enter your current password', type: 'error' });
+      return;
+    }
+    if (!passwordValues.newPassword) {
+      setToast({ message: 'Please enter a new password', type: 'error' });
+      return;
+    }
+    if (passwordValues.newPassword.length < 6) {
+      setToast({ message: 'Password must be at least 6 characters', type: 'error' });
+      return;
+    }
+    if (passwordValues.newPassword !== passwordValues.confirmPassword) {
+      setToast({ message: 'Passwords do not match', type: 'error' });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const res = await fetch('/api/user/password', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currentPassword: passwordValues.oldPassword,
+          newPassword: passwordValues.newPassword,
+          confirmPassword: passwordValues.confirmPassword,
+        }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.message || 'Failed to change password');
+      }
+
+      setIsChangingPassword(false);
+      setPasswordValues({ oldPassword: '', newPassword: '', confirmPassword: '' });
+      setToast({ message: 'Password changed successfully', type: 'success' });
+    } catch (err) {
+      console.error('Failed to change password:', err);
+      setToast({ 
+        message: err instanceof Error ? err.message : 'Failed to change password', 
+        type: 'error' 
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (loading) {
@@ -334,6 +391,60 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Change Password Modal */}
+      {isChangingPassword && (
+        <div className={styles.modal}>
+          <div className={styles.modalContent}>
+            <h2>Change Password</h2>
+            <div className={styles.modalForm}>
+              <div className={styles.formGroup}>
+                <label>Current Password</label>
+                <input
+                  type="password"
+                  value={passwordValues.oldPassword}
+                  onChange={(e) => setPasswordValues({ ...passwordValues, oldPassword: e.target.value })}
+                  placeholder="Enter current password"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>New Password</label>
+                <input
+                  type="password"
+                  value={passwordValues.newPassword}
+                  onChange={(e) => setPasswordValues({ ...passwordValues, newPassword: e.target.value })}
+                  placeholder="Enter new password (min 6 characters)"
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label>Confirm New Password</label>
+                <input
+                  type="password"
+                  value={passwordValues.confirmPassword}
+                  onChange={(e) => setPasswordValues({ ...passwordValues, confirmPassword: e.target.value })}
+                  placeholder="Confirm new password"
+                />
+              </div>
+              <div className={styles.modalActions}>
+                <button 
+                  className={styles.saveButton} 
+                  onClick={handleSavePassword}
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Saving...' : 'Save Password'}
+                </button>
+                <button 
+                  className={styles.cancelButton} 
+                  onClick={handleCancelChangePassword}
+                  disabled={isSaving}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification */}
       {toast && (
