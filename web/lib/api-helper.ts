@@ -32,6 +32,7 @@ export async function fetchWithAuth<T>(
     method,
     headers: {
       Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json",
       ...headers,
     },
   };

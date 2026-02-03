@@ -13,7 +13,6 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import lombok.RequiredArgsConstructor;
 
-
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -21,23 +20,23 @@ public class UserService {
     private final UserRepository userRepository;
 
     public Page<User> findAllUsers(Pageable pageable) {
-        
+
         return userRepository.findAll(pageable);
     }
 
     public User getUserById(UUID userId) {
-        
+
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         return user;
     }
 
     @Transactional
     public User updateProfile(UUID userId, UpdateProfileRequest request) {
-        
+
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found"));
 
         String fullName = request.getFullName();
         String displayName = request.getDisplayName();

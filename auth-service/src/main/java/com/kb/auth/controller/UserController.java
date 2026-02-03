@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -56,7 +57,7 @@ public class UserController {
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/profile")
-    public ResponseEntity<ApiResponse<UserResponse>> getUserById(
+    public ResponseEntity<ApiResponse<UserResponse>> getUserProfile(
             Authentication authentication) {
 
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
@@ -66,6 +67,18 @@ public class UserController {
         User user = userService.getUserById(userId);
 
         return ApiResponseBuilder.success("Get profile successfully", UserMapper.toResponse(user));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{userId}")
+    public ResponseEntity<ApiResponse<UserResponse>> getUserById(
+            @PathVariable UUID userId) {
+
+        System.out.println("[UserController] Getting user by ID: " + userId);
+
+        User user = userService.getUserById(userId);
+
+        return ApiResponseBuilder.success("Get user successfully", UserMapper.toResponse(user));
     }
 
     @PreAuthorize("isAuthenticated()")

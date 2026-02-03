@@ -9,7 +9,6 @@ import Toast from "@/app/components/Toast";
 type LoginValues = {
   identifier: string;
   password: string;
-  rememberMe: boolean;
 };
 
 type SignUpValues = {
@@ -24,7 +23,6 @@ export default function LoginPage() {
   const [loginValues, setLoginValues] = useState<LoginValues>({
     identifier: "",
     password: "",
-    rememberMe: true,
   });
   
   const [signupValues, setSignupValues] = useState<SignUpValues>({
@@ -174,21 +172,6 @@ export default function LoginPage() {
               autoComplete="current-password"
               placeholder="••••••••"
             />
-          </div>
-
-          <div className={styles.helperRow}>
-            <label className={styles.checkbox}>
-              <input
-                type="checkbox"
-                checked={loginValues.rememberMe}
-                onChange={(e) => setLoginValues((s) => ({ ...s, rememberMe: e.target.checked }))}
-              />
-              Remember me
-            </label>
-
-            <Link className={styles.link} href="/forgot-password">
-              Forgot password?
-            </Link>
           </div>
 
           <button className={styles.button} type="submit" disabled={isSubmitting}>

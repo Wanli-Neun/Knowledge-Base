@@ -334,10 +334,7 @@
 }
 
 .memberItem {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 12px;
+  position: relative;
   background: #f9fafb;
   border-radius: 8px;
   border: 1px solid #e5e7eb;
@@ -347,6 +344,14 @@
     background: #f3f4f6;
     border-color: #d1d5db;
   }
+}
+
+.memberClickable {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  cursor: pointer;
 }
 
 .memberAvatar {
@@ -383,11 +388,22 @@
 
 .memberBadge {
   padding: 4px 12px;
-  background: #dbeafe;
-  color: #1e40af;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
+  transition: all 0.2s;
+
+  &.owner {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+    color: #065f46;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.25);
+    font-weight: 700;
+  }
+
+  &.member {
+    background: #dbeafe;
+    color: #1e40af;
+  }
 }
 
 .deleteButton {
@@ -415,6 +431,73 @@
   svg {
     width: 20px;
     height: 20px;
+  }
+}
+
+// Member Menu Dropdown
+.memberMenu {
+  position: absolute;
+  top: 100%;
+  right: 12px;
+  margin-top: 4px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  z-index: 10;
+  width: 160px;
+  animation: menuSlideDown 0.2s ease-out;
+}
+
+@keyframes menuSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background: #f3f4f6;
+    color: #111827;
+  }
+
+  &.danger {
+    color: #ef4444;
+
+    &:hover {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+  }
+
+  &:not(:last-child) {
+    border-bottom: 1px solid #f3f4f6;
   }
 }
 

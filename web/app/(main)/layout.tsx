@@ -195,7 +195,6 @@ export default function DashboardLayout({
               <>
                 <div className={styles.userInfo}>
                   <span className={styles.displayName}>{user.displayName || user.email}</span>
-                  <span className={styles.role}>{user.role}</span>
                 </div>
                 <div 
                   className={styles.avatar}
@@ -212,7 +211,7 @@ export default function DashboardLayout({
                 {isDropdownOpen && (
                   <div className={styles.dropdown}>
                     <Link 
-                      href="/profile" 
+                      href={`/profile/${user.userId}`}
                       className={styles.dropdownItem}
                       onClick={() => setIsDropdownOpen(false)}
                     >

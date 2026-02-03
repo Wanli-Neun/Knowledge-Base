@@ -55,8 +55,18 @@ export default function ProjectPage() {
   const [currentUserPage, setCurrentUserPage] = useState(0);
   const [totalUserPages, setTotalUserPages] = useState(0);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [openMemberMenu, setOpenMemberMenu] = useState<string | null>(null);
   const pageSize = 5;
   const userPageSize = 10;
+
+  // Check URL query params for tab
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab');
+    if (tab === 'members') {
+      setActiveTab('members');
+    }
+  }, []);
 
   // Fetch current user
   useEffect(() => {
@@ -73,6 +83,21 @@ export default function ProjectPage() {
     };
     fetchCurrentUser();
   }, []);
+
+  // Close member menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (openMemberMenu) {
+        const target = e.target as HTMLElement;
+        if (!target.closest(`.${styles.memberItem}`)) {
+          setOpenMemberMenu(null);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [openMemberMenu]);
 
   useEffect(() => {
     let cancelled = false;
@@ -226,6 +251,8 @@ export default function ProjectPage() {
       return;
     }
     
+    setOpenMemberMenu(null);
+    
     try {
       const res = await fetch(`/api/projects/${projectId}/members?userId=${userId}`, {
         method: 'DELETE',
@@ -245,6 +272,19 @@ export default function ProjectPage() {
       console.error('Failed to remove member:', err);
       setToast({ message: 'Có lỗi xảy ra khi xóa member', type: 'error' });
     }
+  };
+
+  const handleViewProfile = (userId: string) => {
+    console.log('[handleViewProfile] userId:', userId);
+    console.log('[handleViewProfile] userId type:', typeof userId);
+    console.log('[handleViewProfile] Navigating to:', `/profile/${userId}`);
+    setOpenMemberMenu(null);
+    
+    // Save projectId to sessionStorage so we can navigate back to this project's members tab
+    sessionStorage.setItem('returnToProject', projectId);
+    
+    // Navigate to profile page
+    window.location.href = `/profile/${userId}`;
   };
 
   if (loading) {
@@ -376,33 +416,54 @@ export default function ProjectPage() {
                   members.map((member, index) => {
                     const isCreator = currentUser?.userId === project.createdBy;
                     const canDelete = isCreator && member.userId !== project.createdBy;
+                    const isMenuOpen = openMemberMenu === member.userId;
                     
                     return (
                       <div key={member.userId || member.email || `member-${index}`} className={styles.memberItem}>
-                        <div className={styles.memberAvatar}>
-                          {member.displayName?.charAt(0).toUpperCase() || 'U'}
-                        </div>
-                        <div className={styles.memberInfo}>
-                          <div className={styles.memberName}>
-                            {member.displayName}
+                        <div 
+                          className={styles.memberClickable}
+                          onClick={() => setOpenMemberMenu(isMenuOpen ? null : member.userId)}
+                        >
+                          <div className={styles.memberAvatar}>
+                            {member.displayName?.charAt(0).toUpperCase() || 'U'}
                           </div>
-                          <div className={styles.memberEmail}>
-                            {member.email}
+                          <div className={styles.memberInfo}>
+                            <div className={styles.memberName}>
+                              {member.displayName}
+                            </div>
+                            <div className={styles.memberEmail}>
+                              {member.email}
+                            </div>
+                          </div>
+                          <div className={`${styles.memberBadge} ${member.userId === project.createdBy ? styles.owner : styles.member}`}>
+                            {member.userId === project.createdBy ? 'Owner' : 'Member'}
                           </div>
                         </div>
-                        <div className={styles.memberBadge}>
-                          {member.userId === project.createdBy ? 'Owner' : 'Member'}
-                        </div>
-                        {canDelete && (
-                          <button 
-                            className={styles.deleteButton}
-                            onClick={() => handleRemoveMember(member.userId, member.displayName)}
-                            title="Remove member"
-                          >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                              <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          </button>
+                        
+                        {/* Dropdown Menu */}
+                        {isMenuOpen && (
+                          <div className={styles.memberMenu}>
+                            <button 
+                              className={styles.menuItem}
+                              onClick={() => handleViewProfile(member.userId)}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                              Profile
+                            </button>
+                            {canDelete && (
+                              <button 
+                                className={`${styles.menuItem} ${styles.danger}`}
+                                onClick={() => handleRemoveMember(member.userId, member.displayName)}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                  <path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                                Remove
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
                     );
