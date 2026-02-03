@@ -146,7 +146,24 @@ export default function ProjectPage() {
         const data = await res.json();
         console.log('[fetchMembers] Raw response:', data);
         console.log('[fetchMembers] Content:', data.content);
-        const membersData = data.content || [];
+        let membersData = data.content || [];
+        
+        // Sort members: Owner first, then by role
+        membersData = membersData.sort((a: Member, b: Member) => {
+          // Check if either is the project creator (owner)
+          const aIsOwner = project?.createdBy === a.userId;
+          const bIsOwner = project?.createdBy === b.userId;
+          
+          if (aIsOwner && !bIsOwner) return -1;
+          if (!aIsOwner && bIsOwner) return 1;
+          
+          // If both or neither are owner, sort by role
+          if (a.role === 'OWNER' && b.role !== 'OWNER') return -1;
+          if (a.role !== 'OWNER' && b.role === 'OWNER') return 1;
+          
+          return 0;
+        });
+        
         setMembers(membersData);
         setTotalPages(data.totalPages || 0);
         setTotalMembers(data.totalElements || 0);
