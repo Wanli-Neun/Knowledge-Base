@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,6 +19,7 @@ import com.kb.auth.entity.User;
 import com.kb.auth.mapper.UserMapper;
 import com.kb.auth.common.response.ApiResponseBuilder;
 import com.kb.auth.dto.request.user.UpdateProfileRequest;
+import com.kb.auth.dto.request.auth.ChangePasswordRequest;
 
 import org.springframework.security.core.Authentication;
 
@@ -56,7 +58,7 @@ public class UserController {
 
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/profile")
-    public ResponseEntity<ApiResponse<UserResponse>> getUserById(
+    public ResponseEntity<ApiResponse<UserResponse>> getUserProfile(
             Authentication authentication) {
 
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
@@ -66,6 +68,18 @@ public class UserController {
         User user = userService.getUserById(userId);
 
         return ApiResponseBuilder.success("Get profile successfully", UserMapper.toResponse(user));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{userId}")
+    public ResponseEntity<ApiResponse<UserResponse>> getUserById(
+            @PathVariable UUID userId) {
+
+        System.out.println("[UserController] Getting user by ID: " + userId);
+
+        User user = userService.getUserById(userId);
+
+        return ApiResponseBuilder.success("Get user successfully", UserMapper.toResponse(user));
     }
 
     @PreAuthorize("isAuthenticated()")
@@ -81,6 +95,21 @@ public class UserController {
         User updatedUser = userService.updateProfile(userId, request);
 
         return ApiResponseBuilder.success("Profile updated successfully", UserMapper.toResponse(updatedUser));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @RequestBody ChangePasswordRequest request,
+            Authentication authentication) {
+
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+
+        UUID userId = principal.getUserId();
+
+        userService.changePassword(userId, request);
+
+        return ApiResponseBuilder.success("Password changed successfully", null);
     }
 
 }

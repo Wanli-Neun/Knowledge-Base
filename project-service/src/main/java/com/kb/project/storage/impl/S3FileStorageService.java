@@ -27,24 +27,22 @@ public class S3FileStorageService implements FileStorageService {
 
     @Override
     public void upload(
-        String key,
-        InputStream inputStream,
-        long contentLength,
-        String contentType
-    ) {
+            String key,
+            InputStream inputStream,
+            long contentLength,
+            String contentType) {
         String fullKey = buildKey(key);
 
         PutObjectRequest request = PutObjectRequest.builder()
-            .bucket(s3Properties.bucket())
-            .key(fullKey)
-            .contentType(contentType)
-            .contentLength(contentLength)
-            .build();
+                .bucket(s3Properties.bucket())
+                .key(fullKey)
+                .contentType(contentType)
+                .contentLength(contentLength)
+                .build();
 
         s3Client.putObject(
-            request,
-            RequestBody.fromInputStream(inputStream, contentLength)
-        );
+                request,
+                RequestBody.fromInputStream(inputStream, contentLength));
 
     }
 
@@ -53,34 +51,34 @@ public class S3FileStorageService implements FileStorageService {
         String fullKey = buildKey(key);
 
         DeleteObjectRequest request = DeleteObjectRequest.builder()
-            .bucket(s3Properties.bucket())
-            .key(fullKey)
-            .build();
+                .bucket(s3Properties.bucket())
+                .key(fullKey)
+                .build();
 
         s3Client.deleteObject(request);
     }
 
     @Override
-    public String generateDownloadUrl(String key, Duration expiresIn) {
+    public String generateDownloadUrl(String key, Duration expiresIn, String filename) {
         String fullKey = buildKey(key);
 
         try (S3Presigner presigner = S3Presigner.create()) {
 
             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                .bucket(s3Properties.bucket())
-                .key(fullKey)
-                .build();
+                    .bucket(s3Properties.bucket())
+                    .key(fullKey)
+                    .responseContentDisposition("attachment; filename=\"" + filename + "\"")
+                    .build();
 
-            GetObjectPresignRequest presignRequest =
-                GetObjectPresignRequest.builder()
+            GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
                     .signatureDuration(expiresIn)
                     .getObjectRequest(getObjectRequest)
                     .build();
 
             return presigner
-                .presignGetObject(presignRequest)
-                .url()
-                .toString();
+                    .presignGetObject(presignRequest)
+                    .url()
+                    .toString();
         }
     }
 

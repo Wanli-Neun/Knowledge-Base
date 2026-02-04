@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import { setupAuthErrorHandler } from '@/lib/auth-utils';
 import styles from './layout.module.scss';
 
 type Project = {
@@ -34,21 +35,50 @@ export default function DashboardLayout({
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newProject, setNewProject] = useState({ name: '', description: '' });
   const [isCreating, setIsCreating] = useState(false);
+  const [currentProjectPage, setCurrentProjectPage] = useState(0);
+  const [totalProjectPages, setTotalProjectPages] = useState(0);
+  const [totalProjects, setTotalProjects] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
+  const projectPageSize = 5;
+
+  const fetchProjects = async (page: number = 0) => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/projects?page=${page}&size=${projectPageSize}`);
+      if (res.ok) {
+        const data = await res.json();
+        setProjects(data.content || []);
+        setTotalProjectPages(data.totalPages || 0);
+        setTotalProjects(data.totalElements || 0);
+        setCurrentProjectPage(page);
+      }
+    } catch (error) {
+      console.error('Failed to fetch projects:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
+    // Setup global auth error handler
+    setupAuthErrorHandler();
+    
     const fetchData = async () => {
       try {
         // Fetch projects và user profile song song
         const [projectsRes, profileRes] = await Promise.all([
-          fetch('/api/projects'),
+          fetch(`/api/projects?page=0&size=${projectPageSize}`),
           fetch('/api/user/profile')
         ]);
 
         if (projectsRes.ok) {
           const projectsData = await projectsRes.json();
           setProjects(projectsData.content || []);
+          setTotalProjectPages(projectsData.totalPages || 0);
+          setTotalProjects(projectsData.totalElements || 0);
+          setCurrentProjectPage(0);
         }
 
         if (profileRes.ok) {
@@ -107,12 +137,8 @@ export default function DashboardLayout({
       });
 
       if (res.ok) {
-        // Refresh projects list
-        const projectsRes = await fetch('/api/projects');
-        if (projectsRes.ok) {
-          const data = await projectsRes.json();
-          setProjects(data.content || []);
-        }
+        // Refresh projects list - quay về trang đầu
+        await fetchProjects(0);
         
         // Reset and close modal
         setNewProject({ name: '', description: '' });
@@ -150,19 +176,50 @@ export default function DashboardLayout({
                 {loading ? (
                   <div className={styles.loading}>Loading...</div>
                 ) : projects.length > 0 ? (
-                  <ul className={styles.projectList}>
-                    {projects.map((project) => (
-                      <li key={project.projectId}>
-                        <Link 
-                          href={`/projects/${project.projectId}`}
-                          className={styles.projectItem}
+                  <>
+                    <ul className={styles.projectList}>
+                      {projects.map((project) => {
+                        const isActive = pathname?.includes(`/projects/${project.projectId}`);
+                        return (
+                          <li key={project.projectId}>
+                            <Link 
+                              href={`/projects/${project.projectId}`}
+                              className={`${styles.projectItem} ${isActive ? styles.active : ''}`}
+                            >
+                              <span className={styles.projectName}>{project.projectName}</span>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {totalProjectPages > 1 && (
+                      <div className={styles.projectPagination}>
+                        <button 
+                          className={styles.pageButton}
+                          onClick={() => fetchProjects(currentProjectPage - 1)}
+                          disabled={currentProjectPage === 0}
+                          title="Previous page"
                         >
-                          <span className={styles.projectIcon}>📁</span>
-                          <span className={styles.projectName}>{project.projectName}</span>
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                            <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </button>
+                        <div className={styles.pageInfo}>
+                          <span className={styles.pageNumber}>{currentProjectPage + 1}/{totalProjectPages}</span>
+                        </div>
+                        <button 
+                          className={styles.pageButton}
+                          onClick={() => fetchProjects(currentProjectPage + 1)}
+                          disabled={currentProjectPage >= totalProjectPages - 1}
+                          title="Next page"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <div className={styles.emptyState}>No projects yet</div>
                 )}
@@ -195,7 +252,6 @@ export default function DashboardLayout({
               <>
                 <div className={styles.userInfo}>
                   <span className={styles.displayName}>{user.displayName || user.email}</span>
-                  <span className={styles.role}>{user.role}</span>
                 </div>
                 <div 
                   className={styles.avatar}
@@ -212,7 +268,7 @@ export default function DashboardLayout({
                 {isDropdownOpen && (
                   <div className={styles.dropdown}>
                     <Link 
-                      href="/profile" 
+                      href={`/profile/${user.userId}`}
                       className={styles.dropdownItem}
                       onClick={() => setIsDropdownOpen(false)}
                     >

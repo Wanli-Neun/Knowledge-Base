@@ -6,6 +6,7 @@ type FetchWithAuthOptions = {
   method?: string;
   body?: any;
   headers?: Record<string, string>;
+  isFormData?: boolean; // Thêm flag để xử lý FormData
 };
 
 /**
@@ -25,7 +26,7 @@ export async function fetchWithAuth<T>(
     );
   }
 
-  const { url, method = "GET", body, headers = {} } = options;
+  const { url, method = "GET", body, headers = {}, isFormData = false } = options;
 
   // Prepare fetch options
   const fetchOptions: RequestInit = {
@@ -37,11 +38,16 @@ export async function fetchWithAuth<T>(
   };
 
   if (body) {
-    fetchOptions.body = typeof body === "string" ? body : JSON.stringify(body);
-    fetchOptions.headers = {
-      ...fetchOptions.headers,
-      "Content-Type": "application/json",
-    };
+    if (isFormData) {
+      // For FormData, don't set Content-Type (browser will set it with boundary)
+      fetchOptions.body = body;
+    } else {
+      fetchOptions.body = typeof body === "string" ? body : JSON.stringify(body);
+      fetchOptions.headers = {
+        ...fetchOptions.headers,
+        "Content-Type": "application/json",
+      };
+    }
   }
 
   let res = await fetch(url, fetchOptions);
@@ -50,16 +56,19 @@ export async function fetchWithAuth<T>(
 
   // If access token expired (401), try refresh
   if (res.status === 401) {
-    console.log("Token expired, attempting refresh...");
+    console.log("Token expired or revoked, attempting refresh...");
     
     const refreshToken = cookieStore.get("refresh_token")?.value;
     
     if (!refreshToken) {
       console.log("No refresh token found");
-      return NextResponse.json(
-        { message: "Session expired, please login again" },
+      const errorResponse = NextResponse.json(
+        { message: "Session expired, please login again", tokenRevoked: true },
         { status: 401 }
       );
+      errorResponse.cookies.delete("access_token");
+      errorResponse.cookies.delete("refresh_token");
+      return errorResponse;
     }
 
     // Try to refresh token
@@ -136,7 +145,7 @@ export async function fetchWithAuth<T>(
     console.log("Refresh failed - clearing session");
     
     const errorResponse = NextResponse.json(
-      { message: "Session expired, please login again" },
+      { message: "Session expired, please login again", tokenRevoked: true },
       { status: 401 }
     );
     errorResponse.cookies.delete("access_token");

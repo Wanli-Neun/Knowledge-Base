@@ -116,6 +116,8 @@
   list-style: none;
   padding: 0;
   margin: 0;
+  height: 210px; // Cố định chiều cao cho 5 projects (5 * 42px)
+  overflow: visible; // Không cần scroll
 }
 
 .projectItem {
@@ -128,6 +130,8 @@
   text-decoration: none;
   transition: all 0.2s ease;
   cursor: pointer;
+  height: 42px; // Cố định chiều cao của mỗi item
+  box-sizing: border-box;
 
   &:hover {
     background: rgba(255, 255, 255, 0.1);
@@ -137,11 +141,18 @@
   &:active {
     transform: scale(0.98);
   }
-}
 
-.projectIcon {
-  font-size: 18px;
-  flex-shrink: 0;
+  &.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    border-left: 3px solid rgba(255, 255, 255, 0.5);
+    padding-left: 5px;
+    font-weight: 600;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+  }
 }
 
 .projectName {
@@ -158,6 +169,63 @@
   font-size: 13px;
   color: rgba(255, 255, 255, 0.5);
   text-align: center;
+}
+
+.projectPagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 8px 8px;
+  margin-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pageButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  svg {
+    display: block;
+  }
+}
+
+.pageInfo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.pageNumber {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .main {

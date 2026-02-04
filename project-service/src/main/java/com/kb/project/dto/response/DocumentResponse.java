@@ -8,11 +8,13 @@ import lombok.Getter;
 @Getter
 @Builder
 public class DocumentResponse {
-    
+
     private UUID id;
     private UUID projectId;
     private String title;
     private String fileType;
     private long fileSize;
     private String downloadUrl;
+    private UUID uploadedBy;
+    private String uploadedByDisplayName;
 }

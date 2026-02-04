@@ -15,6 +15,7 @@ public class UserMapper {
                 .fullName(user.getFullName())
                 .displayName(user.getDisplayName())
                 .avaUrl(user.getAvaUrl())
+                .role(user.getRole().name())
                 .build();
     }
 }
