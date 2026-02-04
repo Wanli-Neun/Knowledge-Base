@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { setupAuthErrorHandler } from '@/lib/auth-utils';
 import styles from './layout.module.scss';
 
@@ -40,6 +40,7 @@ export default function DashboardLayout({
   const [totalProjects, setTotalProjects] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
   const projectPageSize = 5;
 
   const fetchProjects = async (page: number = 0) => {
@@ -177,17 +178,19 @@ export default function DashboardLayout({
                 ) : projects.length > 0 ? (
                   <>
                     <ul className={styles.projectList}>
-                      {projects.map((project) => (
-                        <li key={project.projectId}>
-                          <Link 
-                            href={`/projects/${project.projectId}`}
-                            className={styles.projectItem}
-                          >
-                            <span className={styles.projectIcon}>📁</span>
-                            <span className={styles.projectName}>{project.projectName}</span>
-                          </Link>
-                        </li>
-                      ))}
+                      {projects.map((project) => {
+                        const isActive = pathname?.includes(`/projects/${project.projectId}`);
+                        return (
+                          <li key={project.projectId}>
+                            <Link 
+                              href={`/projects/${project.projectId}`}
+                              className={`${styles.projectItem} ${isActive ? styles.active : ''}`}
+                            >
+                              <span className={styles.projectName}>{project.projectName}</span>
+                            </Link>
+                          </li>
+                        );
+                      })}
                     </ul>
                     {totalProjectPages > 1 && (
                       <div className={styles.projectPagination}>

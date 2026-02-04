@@ -516,7 +516,6 @@ export default function ProjectPage() {
     <div className={styles.container}>
       {/* Header */}
       <div className={styles.header}>
-        <div className={styles.projectIcon}>📁</div>
         <div className={styles.projectInfo}>
           <h1 className={styles.projectName}>{project.projectName}</h1>
           {project.description && (
