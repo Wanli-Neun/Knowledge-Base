@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { setupAuthErrorHandler } from '@/lib/auth-utils';
 import styles from './layout.module.scss';
 
 type Project = {
@@ -60,6 +61,9 @@ export default function DashboardLayout({
   };
 
   useEffect(() => {
+    // Setup global auth error handler
+    setupAuthErrorHandler();
+    
     const fetchData = async () => {
       try {
         // Fetch projects và user profile song song

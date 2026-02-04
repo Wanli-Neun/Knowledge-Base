@@ -56,16 +56,19 @@ export async function fetchWithAuth<T>(
 
   // If access token expired (401), try refresh
   if (res.status === 401) {
-    console.log("Token expired, attempting refresh...");
+    console.log("Token expired or revoked, attempting refresh...");
     
     const refreshToken = cookieStore.get("refresh_token")?.value;
     
     if (!refreshToken) {
       console.log("No refresh token found");
-      return NextResponse.json(
-        { message: "Session expired, please login again" },
+      const errorResponse = NextResponse.json(
+        { message: "Session expired, please login again", tokenRevoked: true },
         { status: 401 }
       );
+      errorResponse.cookies.delete("access_token");
+      errorResponse.cookies.delete("refresh_token");
+      return errorResponse;
     }
 
     // Try to refresh token
@@ -142,7 +145,7 @@ export async function fetchWithAuth<T>(
     console.log("Refresh failed - clearing session");
     
     const errorResponse = NextResponse.json(
-      { message: "Session expired, please login again" },
+      { message: "Session expired, please login again", tokenRevoked: true },
       { status: 401 }
     );
     errorResponse.cookies.delete("access_token");
