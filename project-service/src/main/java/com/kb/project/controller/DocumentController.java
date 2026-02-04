@@ -17,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import lombok.RequiredArgsConstructor;
 
@@ -70,10 +71,12 @@ public class DocumentController {
     public ResponseEntity<ApiResponse<Page<DocumentResponse>>> getDocumentsByProject(
             @PathVariable UUID projectId,
             Authentication authentication,
+            @RequestParam(required = false) String search,
             Pageable pageable) {
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
-        Page<Document> documents = documentService.getDocumentsbyProject(projectId, principal.getUserId(), pageable);
+        Page<Document> documents = documentService.getDocumentsbyProject(projectId, principal.getUserId(), search,
+                pageable);
 
         Page<DocumentResponse> response = documents.map(doc -> {
             String uploaderName = documentService.getUploaderDisplayName(doc.getUploadedBy());

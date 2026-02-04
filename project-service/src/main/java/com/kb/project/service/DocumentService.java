@@ -125,12 +125,18 @@ public class DocumentService {
     public Page<Document> getDocumentsbyProject(
             UUID projectId,
             UUID userId,
+            String search,
             Pageable pageable) {
         boolean isMember = memberRepository
                 .existsByProjectIdAndUserIdAndIsActiveTrue(projectId, userId);
 
         if (!isMember) {
             throw new SecurityException("You do not have permission to access these documents");
+        }
+
+        if (search != null && !search.trim().isEmpty()) {
+            return documentRepository.findByProjectIdAndTitleContainingIgnoreCaseAndIsActiveTrue(
+                    projectId, search.trim(), pageable);
         }
 
         return documentRepository.findByProjectIdAndIsActiveTrue(projectId, pageable);

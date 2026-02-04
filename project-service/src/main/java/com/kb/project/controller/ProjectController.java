@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import lombok.RequiredArgsConstructor;
 
@@ -47,10 +48,11 @@ public class ProjectController {
     @PreAuthorize("isAuthenticated()")
     @GetMapping
     public ResponseEntity<ApiResponse<Page<ProjectResponse>>> getMyProjects(
+            @RequestParam(required = false) String search,
             Pageable pageable,
             Authentication authentication) {
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
-        Page<Project> projects = projectService.getProjectsByUserId(principal.getUserId(), pageable);
+        Page<Project> projects = projectService.getProjectsByUserId(principal.getUserId(), search, pageable);
 
         Page<ProjectResponse> response = projects.map(ProjectMapper::toResponse);
 

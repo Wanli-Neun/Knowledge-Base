@@ -30,7 +30,10 @@ public class ProjectService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Project> getProjectsByUserId(UUID userId, Pageable pageable) {
+    public Page<Project> getProjectsByUserId(UUID userId, String search, Pageable pageable) {
+        if (search != null && !search.trim().isEmpty()) {
+            return projectRepository.findProjectsByUserIdAndSearch(userId, search.trim(), pageable);
+        }
         return projectRepository.findProjectsByUserId(userId, pageable);
     }
 

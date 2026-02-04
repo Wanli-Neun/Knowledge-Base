@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import styles from './project.module.scss';
 import Toast from '@/app/components/Toast';
@@ -82,6 +82,14 @@ export default function ProjectPage() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const docPageSize = 5;
 
+  // Search states
+  const [isDocSearchOpen, setIsDocSearchOpen] = useState(false);
+  const [docSearchQuery, setDocSearchQuery] = useState('');
+  const [isMemberSearchOpen, setIsMemberSearchOpen] = useState(false);
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
+  const docSearchTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const memberSearchTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   // Check URL query params for tab
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -123,10 +131,18 @@ export default function ProjectPage() {
   }, [openMemberMenu]);
 
   // Fetch documents
-  const fetchDocuments = async (page: number = 0) => {
+  const fetchDocuments = async (page: number = 0, searchQuery: string = '') => {
     try {
       setDocumentsLoading(true);
-      const res = await fetch(`/api/projects/${projectId}/documents?page=${page}&size=${docPageSize}`);
+      let url = `/api/projects/${projectId}/documents?page=${page}&size=${docPageSize}`;
+      if (searchQuery.trim()) {
+        url += `&search=${encodeURIComponent(searchQuery)}`;
+      }
+      const res = await fetch(url);
+      if (res.status === 401) {
+        // Token expired or revoked - will be handled by global auth error handler
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         const docData = data.result || data;
@@ -147,6 +163,8 @@ export default function ProjectPage() {
   useEffect(() => {
     if (activeTab === 'documents' && projectId) {
       fetchDocuments(0);
+      setDocSearchQuery(''); // Reset search when switching tabs
+      setIsDocSearchOpen(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, projectId]);
@@ -261,7 +279,7 @@ export default function ProjectPage() {
 
       if (res.ok || res.status === 204) {
         setToast({ message: `Đã xóa "${title}"`, type: 'success' });
-        await fetchDocuments(currentDocPage);
+        await fetchDocuments(currentDocPage, docSearchQuery);
       } else {
         const error = await res.json();
         setToast({ message: error.message || 'Xóa thất bại', type: 'error' });
@@ -280,6 +298,50 @@ export default function ProjectPage() {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   };
+
+  // Handle document search with debounce
+  const handleDocSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setDocSearchQuery(query);
+
+    // Clear previous timer
+    if (docSearchTimerRef.current) {
+      clearTimeout(docSearchTimerRef.current);
+    }
+
+    // Set new timer
+    docSearchTimerRef.current = setTimeout(() => {
+      fetchDocuments(0, query);
+    }, 500); // 500ms delay
+  };
+
+  // Handle member search with debounce
+  const handleMemberSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setMemberSearchQuery(query);
+
+    // Clear previous timer
+    if (memberSearchTimerRef.current) {
+      clearTimeout(memberSearchTimerRef.current);
+    }
+
+    // Set new timer
+    memberSearchTimerRef.current = setTimeout(() => {
+      fetchMembers(0, query);
+    }, 500); // 500ms delay
+  };
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (docSearchTimerRef.current) {
+        clearTimeout(docSearchTimerRef.current);
+      }
+      if (memberSearchTimerRef.current) {
+        clearTimeout(memberSearchTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -321,9 +383,17 @@ export default function ProjectPage() {
     };
   }, [projectId]);
 
-  const fetchMembers = async (page: number = 0) => {
+  const fetchMembers = async (page: number = 0, searchQuery: string = '') => {
     try {
-      const res = await fetch(`/api/projects/${projectId}/members?page=${page}&size=${pageSize}`);
+      let url = `/api/projects/${projectId}/members?page=${page}&size=${pageSize}`;
+      if (searchQuery.trim()) {
+        url += `&search=${encodeURIComponent(searchQuery)}`;
+      }
+      const res = await fetch(url);
+      if (res.status === 401) {
+        // Token expired or revoked - will be handled by global auth error handler
+        return [];
+      }
       if (res.ok) {
         const data = await res.json();
         console.log('[fetchMembers] Raw response:', data);
@@ -362,6 +432,8 @@ export default function ProjectPage() {
   useEffect(() => {
     if (activeTab === 'members') {
       fetchMembers(0); // Reset to first page when switching to members tab
+      setMemberSearchQuery(''); // Reset search when switching tabs
+      setIsMemberSearchOpen(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, projectId]);
@@ -567,15 +639,42 @@ export default function ProjectPage() {
             <div className={styles.documentsTab}>
               <div className={styles.tabHeader}>
                 <h2>Documents</h2>
-                <button 
-                  className={styles.uploadButton}
-                  onClick={() => setIsUploadModalOpen(true)}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                    <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Upload Document
-                </button>
+                <div className={styles.headerActions}>
+                  {isDocSearchOpen && (
+                    <input
+                      type="text"
+                      className={styles.searchInput}
+                      placeholder="Search documents..."
+                      value={docSearchQuery}
+                      onChange={handleDocSearchChange}
+                      autoFocus
+                    />
+                  )}
+                  <button
+                    className={styles.searchButton}
+                    onClick={() => {
+                      setIsDocSearchOpen(!isDocSearchOpen);
+                      if (isDocSearchOpen) {
+                        setDocSearchQuery('');
+                        fetchDocuments(0, '');
+                      }
+                    }}
+                    title="Search"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+                  <button 
+                    className={styles.uploadButton}
+                    onClick={() => setIsUploadModalOpen(true)}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Upload Document
+                  </button>
+                </div>
               </div>
 
               {/* Document List */}
@@ -636,7 +735,7 @@ export default function ProjectPage() {
                 <div className={styles.pagination}>
                   <button 
                     className={styles.pageButton}
-                    onClick={() => fetchDocuments(currentDocPage - 1)}
+                    onClick={() => fetchDocuments(currentDocPage - 1, docSearchQuery)}
                     disabled={currentDocPage === 0}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -652,7 +751,7 @@ export default function ProjectPage() {
                   
                   <button 
                     className={styles.pageButton}
-                    onClick={() => fetchDocuments(currentDocPage + 1)}
+                    onClick={() => fetchDocuments(currentDocPage + 1, docSearchQuery)}
                     disabled={currentDocPage >= totalDocPages - 1}
                   >
                     Next
@@ -669,14 +768,41 @@ export default function ProjectPage() {
             <div className={styles.membersTab}>
               <div className={styles.tabHeader}>
                 <h2>Members</h2>
-                {currentUser?.userId === project.createdBy && (
-                  <button className={styles.addButton} onClick={handleOpenAddMemberModal}>
+                <div className={styles.headerActions}>
+                  {isMemberSearchOpen && (
+                    <input
+                      type="text"
+                      className={styles.searchInput}
+                      placeholder="Search members..."
+                      value={memberSearchQuery}
+                      onChange={handleMemberSearchChange}
+                      autoFocus
+                    />
+                  )}
+                  <button
+                    className={styles.searchButton}
+                    onClick={() => {
+                      setIsMemberSearchOpen(!isMemberSearchOpen);
+                      if (isMemberSearchOpen) {
+                        setMemberSearchQuery('');
+                        fetchMembers(0, '');
+                      }
+                    }}
+                    title="Search"
+                  >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                      <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    Add Member
                   </button>
-                )}
+                  {currentUser?.userId === project.createdBy && (
+                    <button className={styles.addButton} onClick={handleOpenAddMemberModal}>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Add Member
+                    </button>
+                  )}
+                </div>
               </div>
               
               <div className={styles.memberList}>
@@ -752,7 +878,7 @@ export default function ProjectPage() {
                 <div className={styles.pagination}>
                   <button 
                     className={styles.pageButton}
-                    onClick={() => fetchMembers(currentPage - 1)}
+                    onClick={() => fetchMembers(currentPage - 1, memberSearchQuery)}
                     disabled={currentPage === 0}
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -768,7 +894,7 @@ export default function ProjectPage() {
                   
                   <button 
                     className={styles.pageButton}
-                    onClick={() => fetchMembers(currentPage + 1)}
+                    onClick={() => fetchMembers(currentPage + 1, memberSearchQuery)}
                     disabled={currentPage >= totalPages - 1}
                   >
                     Next

@@ -43,10 +43,19 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const projectPageSize = 5;
 
-  const fetchProjects = async (page: number = 0) => {
+  // Project search states
+  const [isProjectSearchOpen, setIsProjectSearchOpen] = useState(false);
+  const [projectSearchQuery, setProjectSearchQuery] = useState('');
+  const projectSearchTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const fetchProjects = async (page: number = 0, searchQuery: string = '') => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/projects?page=${page}&size=${projectPageSize}`);
+      let url = `/api/projects?page=${page}&size=${projectPageSize}`;
+      if (searchQuery.trim()) {
+        url += `&search=${encodeURIComponent(searchQuery)}`;
+      }
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setProjects(data.content || []);
@@ -93,6 +102,31 @@ export default function DashboardLayout({
     };
 
     fetchData();
+  }, []);
+
+  // Handle project search with debounce
+  const handleProjectSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setProjectSearchQuery(query);
+
+    // Clear previous timer
+    if (projectSearchTimerRef.current) {
+      clearTimeout(projectSearchTimerRef.current);
+    }
+
+    // Set new timer
+    projectSearchTimerRef.current = setTimeout(() => {
+      fetchProjects(0, query);
+    }, 500); // 500ms delay
+  };
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (projectSearchTimerRef.current) {
+        clearTimeout(projectSearchTimerRef.current);
+      }
+    };
   }, []);
 
   // Close dropdown when clicking outside
@@ -163,16 +197,46 @@ export default function DashboardLayout({
               <div className={styles.navSection}>
                 <div className={styles.navHeader}>
                   <h3 className={styles.navTitle}>Projects</h3>
-                  <button 
-                    className={styles.addButton}
-                    onClick={() => setIsCreateModalOpen(true)}
-                    aria-label="Create new project"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                      <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                  </button>
+                  <div className={styles.navActions}>
+                    <button 
+                      className={styles.searchButton}
+                      onClick={() => {
+                        setIsProjectSearchOpen(!isProjectSearchOpen);
+                        if (isProjectSearchOpen) {
+                          setProjectSearchQuery('');
+                          fetchProjects(0, '');
+                        }
+                      }}
+                      title="Search projects"
+                      aria-label="Search projects"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                        <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                    <button 
+                      className={styles.addButton}
+                      onClick={() => setIsCreateModalOpen(true)}
+                      aria-label="Create new project"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
+                {isProjectSearchOpen && (
+                  <div className={styles.searchInputContainer}>
+                    <input
+                      type="text"
+                      className={styles.projectSearchInput}
+                      placeholder="Search projects..."
+                      value={projectSearchQuery}
+                      onChange={handleProjectSearchChange}
+                      autoFocus
+                    />
+                  </div>
+                )}
                 {loading ? (
                   <div className={styles.loading}>Loading...</div>
                 ) : projects.length > 0 ? (
@@ -196,7 +260,7 @@ export default function DashboardLayout({
                       <div className={styles.projectPagination}>
                         <button 
                           className={styles.pageButton}
-                          onClick={() => fetchProjects(currentProjectPage - 1)}
+                          onClick={() => fetchProjects(currentProjectPage - 1, projectSearchQuery)}
                           disabled={currentProjectPage === 0}
                           title="Previous page"
                         >
@@ -209,7 +273,7 @@ export default function DashboardLayout({
                         </div>
                         <button 
                           className={styles.pageButton}
-                          onClick={() => fetchProjects(currentProjectPage + 1)}
+                          onClick={() => fetchProjects(currentProjectPage + 1, projectSearchQuery)}
                           disabled={currentProjectPage >= totalProjectPages - 1}
                           title="Next page"
                         >

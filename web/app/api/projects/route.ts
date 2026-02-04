@@ -19,9 +19,15 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const page = searchParams.get("page") || "0";
   const size = searchParams.get("size") || "100";
+  const search = searchParams.get("search") || "";
+
+  let url = `${process.env.PROJECT_SERVICE_URL}/projects?page=${page}&size=${size}`;
+  if (search) {
+    url += `&search=${encodeURIComponent(search)}`;
+  }
 
   return fetchWithAuth<PageResponse<ProjectResponse>>({
-    url: `${process.env.PROJECT_SERVICE_URL}/projects?page=${page}&size=${size}`,
+    url,
     method: "GET",
   });
 }
