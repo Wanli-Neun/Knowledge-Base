@@ -89,12 +89,20 @@ export default function DashboardLayout({
         </div>
         <nav className={styles.nav}>
           {isSidebarOpen && (
-            <Link 
-              href="/projects" 
-              className={`${styles.navLink} ${pathname?.startsWith('/projects') ? styles.active : ''}`}
-            >
-              <span className={styles.navLinkText}>PROJECTS</span>
-            </Link>
+            <>
+              <Link 
+                href="/dashboard" 
+                className={`${styles.navLink} ${pathname === '/dashboard' ? styles.active : ''}`}
+              >
+                <span className={styles.navLinkText}>DASHBOARD</span>
+              </Link>
+              <Link 
+                href="/projects" 
+                className={`${styles.navLink} ${pathname?.startsWith('/projects') ? styles.active : ''}`}
+              >
+                <span className={styles.navLinkText}>PROJECTS</span>
+              </Link>
+            </>
           )}
         </nav>
       </aside>
