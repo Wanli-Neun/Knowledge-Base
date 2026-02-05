@@ -5,6 +5,7 @@ type ProjectResponse = {
   projectName: string;
   description: string;
   createdBy: string;
+  createdByDisplayName?: string;
 };
 
 type PageResponse<T> = {

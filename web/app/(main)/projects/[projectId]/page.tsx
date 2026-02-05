@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import styles from './project.module.scss';
 import Toast from '@/app/components/Toast';
 
@@ -46,6 +46,7 @@ type Document = {
 
 export default function ProjectPage() {
   const params = useParams();
+  const router = useRouter();
   const projectId = params.projectId as string;
   
   const [project, setProject] = useState<ProjectDetail | null>(null);
@@ -586,6 +587,17 @@ export default function ProjectPage() {
 
   return (
     <div className={styles.container}>
+      {/* Back Button */}
+      <button 
+        className={styles.backButton}
+        onClick={() => router.push('/projects')}
+        title="Back to projects"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path d="M19 12H5M5 12l7 7M5 12l7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </button>
+      
       {/* Header */}
       <div className={styles.header}>
         <div className={styles.projectInfo}>

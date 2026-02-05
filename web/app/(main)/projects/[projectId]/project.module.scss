@@ -64,10 +64,35 @@
   }
 }
 
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+  align-self: flex-start;
+
+  &:hover {
+    background: white;
+    border-color: #e5e7eb;
+    color: #374151;
+  }
+
+  svg {
+    display: block;
+  }
+}
+
 .header {
   display: flex;
   align-items: flex-start;
   gap: 16px;
+  margin-left: 40px;
 }
 
 .projectInfo {
@@ -94,6 +119,7 @@
   align-items: center;
   gap: 12px;
   padding: 16px 0;
+  padding-left: 40px;
   border-bottom: 1px solid #e5e7eb;
 }
 

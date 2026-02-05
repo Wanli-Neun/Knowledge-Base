@@ -54,7 +54,10 @@ public class ProjectController {
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
         Page<Project> projects = projectService.getProjectsByUserId(principal.getUserId(), search, pageable);
 
-        Page<ProjectResponse> response = projects.map(ProjectMapper::toResponse);
+        Page<ProjectResponse> response = projects.map(project -> {
+            String creatorDisplayName = projectService.getCreatorDisplayName(project.getCreatedBy());
+            return ProjectMapper.toResponse(project, creatorDisplayName);
+        });
 
         return ApiResponseBuilder.success("Get my projects successfully", response);
     }
