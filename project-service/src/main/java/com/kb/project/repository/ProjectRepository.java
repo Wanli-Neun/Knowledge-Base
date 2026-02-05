@@ -19,4 +19,12 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
     @Query("SELECT p FROM Member m JOIN Project p ON m.projectId = p.id " +
             "WHERE m.userId = :userId AND m.isActive = true AND p.isActive = true")
     Page<Project> findProjectsByUserId(@Param("userId") UUID userId, Pageable pageable);
+
+    @Query("SELECT p FROM Member m JOIN Project p ON m.projectId = p.id " +
+            "WHERE m.userId = :userId AND m.isActive = true AND p.isActive = true " +
+            "AND LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%'))")
+    Page<Project> findProjectsByUserIdAndSearch(
+            @Param("userId") UUID userId,
+            @Param("search") String search,
+            Pageable pageable);
 }

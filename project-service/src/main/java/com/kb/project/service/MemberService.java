@@ -94,12 +94,16 @@ public class MemberService {
     }
 
     @Transactional(readOnly = true)
-    public Page<Member> getMembers(UUID projectId, UUID userId, Pageable pageable) {
+    public Page<Member> getMembers(UUID projectId, UUID userId, String search, Pageable pageable) {
 
         boolean isMember = memberRepository.existsByProjectIdAndUserIdAndIsActiveTrue(projectId, userId);
 
         if (!isMember) {
             throw new AccessDeniedException("Access denied: User is not a member of the project");
+        }
+
+        if (search != null && !search.trim().isEmpty()) {
+            return memberRepository.findByProjectIdAndSearchAndIsActiveTrue(projectId, search.trim(), pageable);
         }
 
         return memberRepository.findByProjectIdAndIsActiveTrue(projectId, pageable);

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.kb.project.common.response.ApiResponse;
 import com.kb.project.common.response.ApiResponseBuilder;
@@ -39,11 +40,12 @@ public class MemberController {
     @GetMapping()
     public ResponseEntity<ApiResponse<Page<MemberResponse>>> getMembers(
             @PathVariable UUID projectId,
+            @RequestParam(required = false) String search,
             Pageable pageable,
             Authentication authentication) {
         CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
-        Page<Member> members = memberService.getMembers(projectId, principal.getUserId(), pageable);
+        Page<Member> members = memberService.getMembers(projectId, principal.getUserId(), search, pageable);
 
         Page<MemberResponse> response = members.map(MemberMapper::toResponse);
 
