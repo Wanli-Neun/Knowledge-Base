@@ -42,4 +42,13 @@ public interface DocumentRepository extends JpaRepository<Document, UUID> {
 
     @Query("SELECT CAST(d.uploadedAt AS date) as date, COUNT(d) as count FROM Document d WHERE d.uploadedAt >= :startDate GROUP BY CAST(d.uploadedAt AS date) ORDER BY CAST(d.uploadedAt AS date)")
     List<Object[]> countDocumentsByDateRange(@Param("startDate") Instant startDate);
+
+    @Query("SELECT COUNT(d) FROM Document d JOIN Member m ON d.projectId = m.projectId " +
+            "WHERE m.userId = :userId AND m.isActive = true AND d.isActive = true")
+    long countByUserDocuments(@Param("userId") UUID userId);
+
+    @Query("SELECT d FROM Document d JOIN Member m ON d.projectId = m.projectId " +
+            "WHERE m.userId = :userId AND m.isActive = true AND d.isActive = true " +
+            "ORDER BY d.updatedAt DESC")
+    Page<Document> findRecentDocumentsByUserId(@Param("userId") UUID userId, Pageable pageable);
 }

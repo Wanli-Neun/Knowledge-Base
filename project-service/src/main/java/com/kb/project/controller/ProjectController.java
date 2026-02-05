@@ -5,15 +5,22 @@ import com.kb.project.common.response.ApiResponseBuilder;
 import com.kb.project.dto.request.project.CreateProjectRequest;
 import com.kb.project.dto.request.project.UpdateProjectRequest;
 import com.kb.project.dto.response.ProjectResponse;
+import com.kb.project.dto.response.UserStatsResponse;
+import com.kb.project.dto.response.RecentDocumentResponse;
 import com.kb.project.mapper.ProjectMapper;
 import com.kb.project.entity.Project;
+import com.kb.project.entity.Document;
 import com.kb.project.security.CustomUserPrincipal;
 import com.kb.project.service.ProjectService;
+import com.kb.project.service.DocumentService;
 
 import java.util.UUID;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -34,6 +41,7 @@ import lombok.RequiredArgsConstructor;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final DocumentService documentService;
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin")
@@ -108,5 +116,40 @@ public class ProjectController {
         projectService.deactivate(projectId, principal.getUserId());
 
         return ApiResponseBuilder.noContent();
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/stats")
+    public ResponseEntity<ApiResponse<UserStatsResponse>> getUserStats(Authentication authentication) {
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+
+        long projectCount = projectService.countUserProjects(principal.getUserId());
+        long documentCount = documentService.countUserDocuments(principal.getUserId());
+
+        UserStatsResponse stats = new UserStatsResponse(projectCount, documentCount);
+
+        return ApiResponseBuilder.success("Get user stats successfully", stats);
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/recent-documents")
+    public ResponseEntity<ApiResponse<List<RecentDocumentResponse>>> getRecentDocuments(Authentication authentication) {
+        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+
+        Page<Document> documents = documentService.getRecentUserDocuments(
+                principal.getUserId(),
+                PageRequest.of(0, 10));
+
+        List<RecentDocumentResponse> response = documents.getContent().stream()
+                .map(doc -> new RecentDocumentResponse(
+                        doc.getId(),
+                        doc.getProjectId(),
+                        doc.getTitle(),
+                        doc.getFileType(),
+                        doc.getFileSize(),
+                        doc.getUpdatedAt()))
+                .collect(Collectors.toList());
+
+        return ApiResponseBuilder.success("Get recent documents successfully", response);
     }
 }

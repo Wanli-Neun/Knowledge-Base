@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import styles from "./dashboard.module.scss";
+import UserDashboardPage from './user-page';
 
 type StatsDetail = {
   total: number;
@@ -27,7 +28,71 @@ type TimeSeriesData = {
   documents: TimeSeriesDataPoint[];
 };
 
+type UserProfile = {
+  userId: string;
+  email: string;
+  fullName: string;
+  displayName: string;
+  avaUrl: string;
+  role: string;
+};
+
 export default function DashboardPage() {
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        console.log('[Dashboard] Fetching user profile...');
+        const res = await fetch('/api/user/profile');
+        console.log('[Dashboard] Profile response status:', res.status);
+        if (res.ok) {
+          const data: UserProfile = await res.json();
+          console.log('[Dashboard] User profile:', data);
+          setUserRole(data.role);
+        } else {
+          console.error('[Dashboard] Failed to fetch profile, status:', res.status);
+          setError(true);
+        }
+      } catch (error) {
+        console.error('[Dashboard] Failed to fetch user profile:', error);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{ padding: '32px', textAlign: 'center' }}>
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (error || !userRole) {
+    return (
+      <div style={{ padding: '32px', textAlign: 'center' }}>
+        <p>Failed to load dashboard. Please try refreshing the page.</p>
+      </div>
+    );
+  }
+
+  // Show user dashboard for regular users
+  if (userRole !== 'ADMIN') {
+    return <UserDashboardPage />;
+  }
+
+  // Admin dashboard component
+  return <AdminDashboard />;
+}
+
+function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats>({
     users: { total: 0, active: 0, inactive: 0 },
     projects: { total: 0, active: 0, inactive: 0 },

@@ -214,4 +214,9 @@ public class ProjectService {
         return timeSeries;
     }
 
+    @Transactional(readOnly = true)
+    public long countUserProjects(UUID userId) {
+        return projectRepository.countByMemberUserId(userId);
+    }
+
 }

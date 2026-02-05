@@ -288,4 +288,14 @@ public class DocumentService {
 
         return timeSeries;
     }
+
+    @Transactional(readOnly = true)
+    public long countUserDocuments(UUID userId) {
+        return documentRepository.countByUserDocuments(userId);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Document> getRecentUserDocuments(UUID userId, Pageable pageable) {
+        return documentRepository.findRecentDocumentsByUserId(userId, pageable);
+    }
 }

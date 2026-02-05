@@ -42,4 +42,8 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
 
         @Query("SELECT CAST(p.createdAt AS date) as date, COUNT(p) as count FROM Project p WHERE p.createdAt >= :startDate GROUP BY CAST(p.createdAt AS date) ORDER BY CAST(p.createdAt AS date)")
         List<Object[]> countProjectsByDateRange(@Param("startDate") Instant startDate);
+
+        @Query("SELECT COUNT(DISTINCT p.id) FROM Member m JOIN Project p ON m.projectId = p.id " +
+                        "WHERE m.userId = :userId AND m.isActive = true AND p.isActive = true")
+        long countByMemberUserId(@Param("userId") UUID userId);
 }
