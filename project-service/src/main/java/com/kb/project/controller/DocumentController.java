@@ -34,74 +34,75 @@ import com.kb.project.dto.response.DocumentResponse;
 @RequestMapping("/projects/{projectId}/documents")
 public class DocumentController {
 
-    private final DocumentService documentService;
+        private final DocumentService documentService;
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<DocumentResponse>> upload(
-            @PathVariable UUID projectId,
-            @RequestPart("file") MultipartFile file,
-            Authentication authentication) throws IOException {
+        @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+        public ResponseEntity<ApiResponse<DocumentResponse>> upload(
+                        @PathVariable UUID projectId,
+                        @RequestPart("file") MultipartFile file,
+                        Authentication authentication) throws IOException {
 
-        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+                CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
-        Document document = documentService.upload(
-                projectId,
-                principal.getUserId(),
-                file);
+                Document document = documentService.upload(
+                                projectId,
+                                principal.getUserId(),
+                                file);
 
-        String uploaderName = documentService.getUploaderDisplayName(document.getUploadedBy());
+                String uploaderName = documentService.getUploaderDisplayName(document.getUploadedBy());
 
-        return ApiResponseBuilder.success("Upload document successfully",
-                DocumentMapper.toResponseWithUploader(document, uploaderName));
-    }
+                return ApiResponseBuilder.success("Upload document successfully",
+                                DocumentMapper.toResponseWithUploader(document, uploaderName));
+        }
 
-    @DeleteMapping("/{documentId}")
-    public ResponseEntity<ApiResponse<Void>> delete(
-            @PathVariable UUID projectId,
-            @PathVariable UUID documentId,
-            Authentication authentication) {
-        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+        @DeleteMapping("/{documentId}")
+        public ResponseEntity<ApiResponse<Void>> delete(
+                        @PathVariable UUID projectId,
+                        @PathVariable UUID documentId,
+                        Authentication authentication) {
+                CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
-        documentService.delete(projectId, documentId, principal.getUserId());
+                documentService.delete(projectId, documentId, principal.getUserId());
 
-        return ApiResponseBuilder.success();
-    }
+                return ApiResponseBuilder.success();
+        }
 
-    @GetMapping()
-    public ResponseEntity<ApiResponse<Page<DocumentResponse>>> getDocumentsByProject(
-            @PathVariable UUID projectId,
-            Authentication authentication,
-            @RequestParam(required = false) String search,
-            Pageable pageable) {
-        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+        @GetMapping()
+        public ResponseEntity<ApiResponse<Page<DocumentResponse>>> getDocumentsByProject(
+                        @PathVariable UUID projectId,
+                        Authentication authentication,
+                        @RequestParam(required = false) String search,
+                        Pageable pageable) {
+                CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
-        Page<Document> documents = documentService.getDocumentsbyProject(projectId, principal.getUserId(), search,
-                pageable);
+                Page<Document> documents = documentService.getDocumentsbyProject(projectId, principal.getUserId(),
+                                search,
+                                pageable);
 
-        Page<DocumentResponse> response = documents.map(doc -> {
-            String uploaderName = documentService.getUploaderDisplayName(doc.getUploadedBy());
-            return DocumentMapper.toResponseWithUploader(doc, uploaderName);
-        });
+                Page<DocumentResponse> response = documents.map(doc -> {
+                        String uploaderName = documentService.getUploaderDisplayName(doc.getUploadedBy());
+                        return DocumentMapper.toResponseWithUploader(doc, uploaderName);
+                });
 
-        return ApiResponseBuilder.success("Get documents successfully", response);
-    }
+                return ApiResponseBuilder.success("Get documents successfully", response);
+        }
 
-    @GetMapping("/{documentId}")
-    public ResponseEntity<ApiResponse<DocumentResponse>> getDocumentDetail(
-            @PathVariable UUID projectId,
-            @PathVariable UUID documentId,
-            Authentication authentication) {
-        CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
+        @GetMapping("/{documentId}")
+        public ResponseEntity<ApiResponse<DocumentResponse>> getDocumentDetail(
+                        @PathVariable UUID projectId,
+                        @PathVariable UUID documentId,
+                        Authentication authentication) {
+                CustomUserPrincipal principal = (CustomUserPrincipal) authentication.getPrincipal();
 
-        Document document = documentService.getDocumentById(projectId, documentId, principal.getUserId());
+                Document document = documentService.getDocumentById(projectId, documentId, principal.getUserId());
 
-        String downloadUrl = documentService.generateDownloadUrl(projectId, documentId, principal.getUserId(),
-                Duration.ofMinutes(15));
-        String uploaderName = documentService.getUploaderDisplayName(document.getUploadedBy());
+                String downloadUrl = documentService.generateDownloadUrl(projectId, documentId, principal.getUserId(),
+                                Duration.ofMinutes(15));
+                String uploaderName = documentService.getUploaderDisplayName(document.getUploadedBy());
 
-        return ApiResponseBuilder.success("Get document successfully",
-                DocumentMapper.toResponseWithAll(document, downloadUrl, uploaderName));
+                return ApiResponseBuilder.success("Get document successfully",
+                                DocumentMapper.toResponseWithAll(document, downloadUrl, uploaderName));
 
-    }
+        }
 
 }
