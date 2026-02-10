@@ -1,0 +1,12 @@
+# Copy file này thành terraform.tfvars và điền thông tin thực tế
+
+# AWS Configuration
+aws_region   = "ap-southeast-1"  # Hoặc region bạn muốn dùng
+project_name = "project-service-documents"
+environment  = "dev"
+
+# CORS allowed origins - CHỈ cần domain của FRONTEND (browser requests)
+allowed_origins = [
+  "http://localhost:3000",      # Next.js Frontend (local)
+  # "https://yourdomain.com",   # Production Frontend domain
+]
