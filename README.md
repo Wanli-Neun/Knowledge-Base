@@ -4,6 +4,7 @@ A comprehensive enterprise-grade knowledge management platform built with micros
 
 ## 📋 Table of Contents
 
+- [Infrastructure Management](#infrastructure-management) ⭐ NEW
 - [Overview](#overview)
 - [Architecture](#architecture)
 - [Tech Stack](#tech-stack)
@@ -17,6 +18,37 @@ A comprehensive enterprise-grade knowledge management platform built with micros
 - [Deployment](#deployment)
 - [Contributing](#contributing)
 - [License](#license)
+
+## 🏗️ Infrastructure Management
+
+> **Centralized Infrastructure as Code** - Tất cả AWS resources được quản lý tập trung qua Terraform
+
+### 📚 Infrastructure Documentation
+
+| Document              | Purpose                                                  | Link                                         |
+| --------------------- | -------------------------------------------------------- | -------------------------------------------- |
+| **INFRASTRUCTURE.md** | Master index - Toàn bộ infrastructure overview & roadmap | **[→ View](INFRASTRUCTURE.md)** ⭐           |
+| Terraform Guide       | Setup, usage & troubleshooting                           | [→ terraform/README.md](terraform/README.md) |
+
+### 🚀 Quick Deploy Infrastructure
+
+```powershell
+# Deploy AWS resources (S3 buckets, etc.)
+cd terraform
+terraform init
+terraform plan
+terraform apply
+```
+
+**Current Infrastructure:**
+
+- ✅ S3 bucket for file content storage (Terraform managed)
+- ⚠️ S3 bucket for original files (Legacy, referenced only)
+- 🔮 Future: RDS, VPC, ECS (Planned via Terraform)
+
+👉 **[View Full Infrastructure Inventory →](INFRASTRUCTURE.md)**
+
+---
 
 ## 🎯 Overview
 

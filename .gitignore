@@ -19,7 +19,7 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# virtual machine crash logs
 hs_err_pid*
 replay_pid*
 
@@ -34,9 +34,9 @@ replay_pid*
 *.tfstate
 *.tfstate.*
 
-# Terraform variable files (contain sensitive data like credentials)
-terraform/*.tfvars
-!terraform/terraform.tfvars.example
+# Terraform variable files (contain sensitive data)
+*.tfvars
+!*.tfvars.example
 
 # Terraform override files
 override.tf
@@ -44,7 +44,7 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 
-# Terraform CLI configuration files
+# Terraform CLI configuration
 .terraformrc
 terraform.rc
 
@@ -52,11 +52,10 @@ terraform.rc
 crash.log
 crash.*.log
 
-# Terraform lock file - SHOULD be committed (not ignored)
-# terraform/.terraform.lock.hcl
+# Lock file SHOULD be committed
+# .terraform.lock.hcl
 
 ### AWS ###
-# AWS credentials
 .aws/
 **/credentials
 
@@ -64,9 +63,8 @@ crash.*.log
 .env
 .env.local
 .env.*.local
-*.env
 
-### Node.js (Next.js Frontend) ###
+### Node.js ###
 node_modules/
 .next/
 out/
